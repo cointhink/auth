@@ -1,12 +1,17 @@
 #[macro_use]
 extern crate rocket;
 
-#[get("/hello/<name>/<age>")]
-fn hello(name: &str, age: u8) -> String {
-    format!("Hello, {} year old named {}!", age, name)
+#[get("/auth/<token>")]
+fn auth(token: &str) -> String {
+    format!("Hello, {} ", token)
+}
+
+#[get("/register/<email>")]
+fn register(email: &str) -> String {
+    format!("Hello, {} ", email)
 }
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![hello])
+    rocket::build().mount("/", routes![auth, register])
 }
