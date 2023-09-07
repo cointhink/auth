@@ -1,4 +1,9 @@
 use postgres::{Client, NoTls};
+use rocket_db_pools::{sqlx, Database};
+
+#[derive(Database)]
+#[database("auth_db")]
+pub struct AuthDb(sqlx::PgPool);
 
 pub fn setup(config: toml::Table) -> Client {
     let db_url = config.get("db_url").unwrap().as_str().unwrap();

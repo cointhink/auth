@@ -1,3 +1,7 @@
+use rocket_db_pools::{
+    sqlx::{self, Row},
+    Connection, Database,
+};
 use std::fs;
 use toml;
 
@@ -12,7 +16,13 @@ fn auth(token: &str) -> String {
 }
 
 #[get("/register/<email>")]
-fn register(email: &str) -> String {
+async fn register(mut db: Connection<sql::AuthDb>, email: &str) -> String {
+    sqlx::query("SELECT content FROM logs WHERE id = ?")
+        .bind(1)
+        .fetch_one(&mut *db)
+        .await
+        .and_then(|r| Ok(r.try_get(0)?))
+        .ok();
     format!("Hello, {} ", email)
 }
 
@@ -21,5 +31,7 @@ fn rocket() -> _ {
     let toml = fs::read_to_string("config.toml").unwrap();
     let config = toml::from_str(&toml).unwrap();
     sql::setup(config);
-    rocket::build().mount("/", routes![auth, register])
+    rocket::build()
+        .attach(sql::AuthDb::init())
+        .mount("/", routes![auth, register])
 }
