@@ -1,3 +1,8 @@
+use std::fs;
+use toml;
+
+mod sql;
+
 #[macro_use]
 extern crate rocket;
 
@@ -13,5 +18,8 @@ fn register(email: &str) -> String {
 
 #[launch]
 fn rocket() -> _ {
+    let toml = fs::read_to_string("config.toml").unwrap();
+    let config = toml::from_str(&toml).unwrap();
+    sql::setup(config);
     rocket::build().mount("/", routes![auth, register])
 }
