@@ -15,7 +15,8 @@ fn auth(token: &str) -> String {
 #[get("/register/<email>")]
 async fn register(db: Connection<sql::AuthDb>, email: &str) -> String {
     let account = sql::find_or_create_by_email(db, email).await;
-    format!("{:?} ", account.email)
+    send_email(&account.email);
+    format!("{}", account.email)
 }
 
 #[launch]
@@ -28,6 +29,8 @@ fn rocket() -> _ {
         .mount("/", routes![auth, register])
 }
 
+fn send_email(addr: &str) {}
+
 #[cfg(test)]
 mod test {
     use super::rocket;
@@ -36,10 +39,12 @@ mod test {
 
     #[test]
     fn register() {
+        let email = "a@b.c";
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response = client.get("/register/a@b.c").dispatch();
+        let response = client.get(format!("/register/{}", email)).dispatch();
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.into_string(), Some("a@b.c".into()));
+        let body = response.into_string().unwrap();
+        assert_eq!(body, email.to_string());
     }
 
     #[test]
