@@ -10,9 +10,9 @@ pub struct AuthDb(sqlx::PgPool);
 
 #[derive(Debug)]
 pub struct Account {
-    id: String,
-    email: String,
-    token: String,
+    pub id: String,
+    pub email: String,
+    pub token: String,
 }
 
 impl Account {
@@ -48,6 +48,7 @@ pub fn setup(config: toml::Table) -> Client {
         .unwrap();
     client
 }
+
 pub async fn by_email(mut db: Connection<AuthDb>, email: &str) -> Option<Account> {
     match sqlx::query("SELECT * FROM auth WHERE email = $1")
         .bind(email)
@@ -57,4 +58,16 @@ pub async fn by_email(mut db: Connection<AuthDb>, email: &str) -> Option<Account
         Ok(row) => Some(Account::from_row(&row)),
         Err(_e) => None,
     }
+}
+
+pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
+    sqlx::query("INSERT INTO auth values ($1, $2, $3)")
+        .bind([
+            account.id.as_str(),
+            account.email.as_str(),
+            account.token.as_str(),
+        ])
+        .fetch_one(&mut *db)
+        .await
+        .unwrap();
 }

@@ -14,17 +14,18 @@ fn auth(token: &str) -> String {
 
 #[get("/register/<email>")]
 async fn register(mut db: Connection<sql::AuthDb>, email: &str) -> String {
-    match sql::by_email(db, email).await {
+    let account = match sql::by_email(db, email).await {
         Some(account) => {
             println!("{:?}", account);
-            format!("Hello, {} {:?} ", email, account)
+            account
         }
         None => {
-            println!("by_email none");
             let account = sql::Account::from_email(email);
-            "None".to_string()
+            //sql::insert(&mut db, &account);
+            account
         }
-    }
+    };
+    format!("{:?} ", account.email)
 }
 
 #[launch]
@@ -48,6 +49,7 @@ mod test {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get("/register/a@b.c").dispatch();
         assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.into_string(), Some("a@b.c".into()));
     }
 
     #[test]
