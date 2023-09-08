@@ -13,18 +13,8 @@ fn auth(token: &str) -> String {
 }
 
 #[get("/register/<email>")]
-async fn register(mut db: Connection<sql::AuthDb>, email: &str) -> String {
-    let account = match sql::by_email(db, email).await {
-        Some(account) => {
-            println!("{:?}", account);
-            account
-        }
-        None => {
-            let account = sql::Account::from_email(email);
-            //sql::insert(&mut db, &account);
-            account
-        }
-    };
+async fn register(db: Connection<sql::AuthDb>, email: &str) -> String {
+    let account = sql::find_or_create_by_email(db, email).await;
     format!("{:?} ", account.email)
 }
 

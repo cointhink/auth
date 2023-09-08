@@ -49,24 +49,26 @@ pub fn setup(config: toml::Table) -> Client {
     client
 }
 
-pub async fn by_email(mut db: Connection<AuthDb>, email: &str) -> Option<Account> {
+pub async fn find_or_create_by_email(mut db: Connection<AuthDb>, email: &str) -> Account {
     match sqlx::query("SELECT * FROM auth WHERE email = $1")
         .bind(email)
         .fetch_one(&mut *db)
         .await
     {
-        Ok(row) => Some(Account::from_row(&row)),
-        Err(_e) => None,
+        Ok(row) => Account::from_row(&row),
+        Err(_e) => {
+            let account = Account::from_email(email);
+            insert(db, &account).await;
+            account
+        }
     }
 }
 
 pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
     sqlx::query("INSERT INTO auth values ($1, $2, $3)")
-        .bind([
-            account.id.as_str(),
-            account.email.as_str(),
-            account.token.as_str(),
-        ])
+        .bind(account.id.as_str())
+        .bind(account.email.as_str())
+        .bind(account.token.as_str())
         .fetch_one(&mut *db)
         .await
         .unwrap();
