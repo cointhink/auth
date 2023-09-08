@@ -1,7 +1,4 @@
-use rocket_db_pools::{
-    sqlx::{self, Row},
-    Connection, Database,
-};
+use rocket_db_pools::{Connection, Database};
 use std::fs;
 use toml;
 
@@ -17,13 +14,17 @@ fn auth(token: &str) -> String {
 
 #[get("/register/<email>")]
 async fn register(mut db: Connection<sql::AuthDb>, email: &str) -> String {
-    let row = sqlx::query("SELECT content FROM auth WHERE id = ?")
-        .bind(1)
-        .fetch_one(&mut *db)
-        .await
-        .and_then(|r| Ok(r.try_get(0)?))
-        .ok();
-    format!("Hello, {} {:?} ", email, row)
+    match sql::by_email(db, email).await {
+        Some(account) => {
+            println!("{:?}", account);
+            format!("Hello, {} {:?} ", email, account)
+        }
+        None => {
+            println!("by_email none");
+            let account = sql::Account::from_email(email);
+            "None".to_string()
+        }
+    }
 }
 
 #[launch]
@@ -43,7 +44,14 @@ mod test {
     use rocket::local::blocking::Client;
 
     #[test]
-    fn hello_world() {
+    fn register() {
+        let client = Client::tracked(rocket()).expect("valid rocket instance");
+        let response = client.get("/register/a@b.c").dispatch();
+        assert_eq!(response.status(), Status::Ok);
+    }
+
+    #[test]
+    fn auth() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.get("/auth/abcd1234").dispatch();
         assert_eq!(response.status(), Status::Ok);
