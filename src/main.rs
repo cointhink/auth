@@ -1,4 +1,6 @@
+use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use rocket_db_pools::{Connection, Database};
+use sql::Account;
 use std::fs;
 use toml;
 
@@ -15,7 +17,7 @@ fn auth(token: &str) -> String {
 #[get("/register/<email>")]
 async fn register(db: Connection<sql::AuthDb>, email: &str) -> String {
     let account = sql::find_or_create_by_email(db, email).await;
-    send_email(&account.email);
+    send_email(&account).await;
     format!("{}", account.email)
 }
 
@@ -29,7 +31,21 @@ fn rocket() -> _ {
         .mount("/", routes![auth, register])
 }
 
-fn send_email(addr: &str) {}
+async fn send_email(account: &Account) {
+    let message = MessageBuilder::new()
+        .from(("John Doe", "john@example.com"))
+        .to(account.email.as_str())
+        .subject("Cointhink api token")
+        .text_body(format!("{}", account.token));
+    SmtpClientBuilder::new("localhost", 25)
+        .implicit_tls(false)
+        .connect()
+        .await
+        .unwrap()
+        .send(message)
+        .await
+        .unwrap();
+}
 
 #[cfg(test)]
 mod test {
