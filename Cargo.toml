@@ -6,9 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+figment = { version = "0.10.10", features = ["serde_json"] }
 mail-send = "0.4.0"
 postgres = "0.19.7"
-#rocket = "0.4.11"
-rocket = "=0.5.0-rc.3"
+rocket = { version = "=0.5.0-rc.3", features = ["serde_json"] }
 rocket_db_pools = { version = "0.1.0-rc.3", features = ["sqlx_postgres"] }
+serde = "1.0.188"
 toml = "0.7.6"

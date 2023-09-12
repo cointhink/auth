@@ -1,8 +1,8 @@
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
+use rocket::{Config, State};
 use rocket_db_pools::{Connection, Database};
+use serde::Deserialize;
 use sql::Account;
-use std::fs;
-use toml;
 
 mod sql;
 
@@ -11,33 +11,34 @@ extern crate rocket;
 
 #[get("/auth/<token>")]
 fn auth(token: &str) -> String {
-    format!("Hello, {} ", token)
+    format!("{}", token)
 }
 
 #[get("/register/<email>")]
-async fn register(db: Connection<sql::AuthDb>, email: &str) -> String {
+async fn register(rocket_config: &Config, db: Connection<sql::AuthDb>, email: &str) -> String {
     let account = sql::find_or_create_by_email(db, email).await;
-    send_email(&account).await;
+    println!("{:?}", rocket_config);
+    send_email("fiizb.gk.donp.org", &account).await;
     format!("{}", account.email)
 }
 
+#[derive(Deserialize)]
+pub struct AppConfig {}
+
 #[launch]
 fn rocket() -> _ {
-    let toml = fs::read_to_string("config.toml").unwrap();
-    let config = toml::from_str(&toml).unwrap();
-    sql::setup(config);
     rocket::build()
         .attach(sql::AuthDb::init())
         .mount("/", routes![auth, register])
 }
 
-async fn send_email(account: &Account) {
+async fn send_email(smtp_host: &str, account: &Account) {
     let message = MessageBuilder::new()
         .from(("John Doe", "john@example.com"))
         .to(account.email.as_str())
         .subject("Cointhink api token")
         .text_body(format!("{}", account.token));
-    SmtpClientBuilder::new("localhost", 25)
+    SmtpClientBuilder::new(smtp_host, 25)
         .implicit_tls(false)
         .connect()
         .await
@@ -66,8 +67,9 @@ mod test {
     #[test]
     fn auth() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response = client.get("/auth/abcd1234").dispatch();
+        let token = "abcd1234";
+        let response = client.get(format!("/auth/{}", token)).dispatch();
         assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.into_string(), Some("Hello, world!".into()));
+        assert_eq!(response.into_string(), Some(token.into()));
     }
 }

@@ -1,4 +1,3 @@
-use postgres::{Client, NoTls};
 use rocket_db_pools::{
     sqlx::{self, Postgres, Row},
     Connection, Database,
@@ -33,21 +32,21 @@ impl Account {
     }
 }
 
-pub fn setup(config: toml::Table) -> Client {
-    let db_url = config.get("db_url").unwrap().as_str().unwrap();
-    let mut client = Client::connect(db_url, NoTls).unwrap();
-    client
-        .execute(
-            "CREATE TABLE IF NOT EXISTS auth (
-            id VARCHAR(36),
-            email VARCHAR(256),
-            token VARCHAR(36)
-        )",
-            &[],
-        )
-        .unwrap();
-    client
-}
+// pub fn setup(config: crate::AppConfig) -> Client {
+//     println!("{:?}", config.url);
+//     let mut client = Client::connect(&config.url, NoTls).unwrap();
+//     client
+//         .execute(
+//             "CREATE TABLE IF NOT EXISTS auth (
+//             id VARCHAR(36),
+//             email VARCHAR(256),
+//             token VARCHAR(36)
+//         )",
+//             &[],
+//         )
+//         .unwrap();
+//     client
+// }
 
 pub async fn find_or_create_by_email(mut db: Connection<AuthDb>, email: &str) -> Account {
     match sqlx::query("SELECT * FROM auth WHERE email = $1")
