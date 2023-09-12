@@ -1,7 +1,7 @@
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
-use rocket::{Config, State};
+use rocket::State;
+use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket_db_pools::{Connection, Database};
-use serde::Deserialize;
 use sql::Account;
 
 mod sql;
@@ -15,20 +15,27 @@ fn auth(token: &str) -> String {
 }
 
 #[get("/register/<email>")]
-async fn register(rocket_config: &Config, db: Connection<sql::AuthDb>, email: &str) -> String {
+async fn register(
+    app_config: &State<AppConfig>,
+    db: Connection<sql::AuthDb>,
+    email: &str,
+) -> String {
     let account = sql::find_or_create_by_email(db, email).await;
-    println!("{:?}", rocket_config);
-    send_email("fiizb.gk.donp.org", &account).await;
+    send_email(&app_config.smtp, &account).await;
     format!("{}", account.email)
 }
 
 #[derive(Deserialize)]
-pub struct AppConfig {}
+#[serde(crate = "rocket::serde")]
+pub struct AppConfig {
+    smtp: String,
+}
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .attach(sql::AuthDb::init())
+        .attach(AdHoc::config::<AppConfig>())
         .mount("/", routes![auth, register])
 }
 
@@ -38,7 +45,9 @@ async fn send_email(smtp_host: &str, account: &Account) {
         .to(account.email.as_str())
         .subject("Cointhink api token")
         .text_body(format!("{}", account.token));
+    println!("smtp {}", smtp_host);
     SmtpClientBuilder::new(smtp_host, 25)
+        .allow_invalid_certs()
         .implicit_tls(false)
         .connect()
         .await

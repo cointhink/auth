@@ -68,7 +68,7 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
         .bind(account.id.as_str())
         .bind(account.email.as_str())
         .bind(account.token.as_str())
-        .fetch_one(&mut *db)
+        .execute(&mut *db)
         .await
         .unwrap();
 }
