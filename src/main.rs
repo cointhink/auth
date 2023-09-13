@@ -1,11 +1,12 @@
+use account::Account;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use rocket::http::Status;
 use rocket::response::status;
 use rocket::State;
 use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket_db_pools::{Connection, Database};
-use sql::Account;
 
+mod account;
 mod sql;
 
 #[macro_use]

@@ -3,16 +3,11 @@ use rocket_db_pools::{
     Connection, Database,
 };
 
+use crate::account::Account;
+
 #[derive(Database)]
 #[database("auth_db")]
 pub struct AuthDb(sqlx::PgPool);
-
-#[derive(Debug)]
-pub struct Account {
-    pub id: String,
-    pub email: String,
-    pub token: String,
-}
 
 impl Account {
     fn from_row(row: &<Postgres as rocket_db_pools::sqlx::Database>::Row) -> Account {
