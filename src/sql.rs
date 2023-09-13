@@ -63,6 +63,17 @@ pub async fn find_or_create_by_email(mut db: Connection<AuthDb>, email: &str) ->
     }
 }
 
+pub async fn find_by_token(mut db: Connection<AuthDb>, token: &str) -> Option<Account> {
+    match sqlx::query("SELECT * FROM auth WHERE token = $1")
+        .bind(token)
+        .fetch_one(&mut *db)
+        .await
+    {
+        Ok(row) => Some(Account::from_row(&row)),
+        Err(_e) => None,
+    }
+}
+
 pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
     sqlx::query("INSERT INTO auth values ($1, $2, $3)")
         .bind(account.id.as_str())

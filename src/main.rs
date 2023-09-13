@@ -10,8 +10,11 @@ mod sql;
 extern crate rocket;
 
 #[get("/auth/<token>")]
-fn auth(token: &str) -> String {
-    format!("{}", token)
+async fn auth(db: Connection<sql::AuthDb>, token: &str) -> String {
+    match sql::find_by_token(db, token).await {
+        Some(account) => account.email,
+        None => "bad token".to_owned(),
+    }
 }
 
 #[get("/register/<email>")]
