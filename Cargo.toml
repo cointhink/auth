@@ -14,3 +14,4 @@ rocket_db_pools = { version = "0.1.0-rc.3", features = ["sqlx_postgres"] }
 serde = "1.0.188"
 sqlx = { version = "0.7.1", features = ["migrate"] }
 toml = "0.7.6"
+uuid = { version = "1.4.1", features = ["v4"] }

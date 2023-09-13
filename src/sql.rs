@@ -2,6 +2,7 @@ use rocket_db_pools::{
     sqlx::{self, Postgres, Row},
     Connection, Database,
 };
+use uuid::Uuid;
 
 use crate::account::Account;
 
@@ -20,9 +21,9 @@ impl Account {
 
     pub fn from_email(email: &str) -> Account {
         Account {
-            id: "uuid".to_string(),
+            id: Uuid::new_v4().to_string(),
             email: email.to_string(),
-            token: "uuid".to_string(),
+            token: Uuid::new_v4().to_string(),
         }
     }
 }

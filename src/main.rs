@@ -12,6 +12,13 @@ mod sql;
 #[macro_use]
 extern crate rocket;
 
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct AppConfig {
+    smtp: String,
+    site: String,
+}
+
 #[get("/auth/<token>")]
 async fn auth(db: Connection<sql::AuthDb>, token: &str) -> status::Custom<String> {
     match sql::find_by_token(db, token).await {
@@ -27,14 +34,9 @@ async fn register(
     email: &str,
 ) -> String {
     let account = sql::find_or_create_by_email(db, email).await;
-    send_email(&app_config.smtp, &account).await;
+    let body = format!("{}/{}", app_config.site, account.token);
+    send_email(&app_config.smtp, &account, &body).await;
     format!("{}", account.email)
-}
-
-#[derive(Deserialize)]
-#[serde(crate = "rocket::serde")]
-pub struct AppConfig {
-    smtp: String,
 }
 
 #[launch]
@@ -45,12 +47,12 @@ fn rocket() -> _ {
         .mount("/", routes![auth, register])
 }
 
-async fn send_email(smtp_host: &str, account: &Account) {
+async fn send_email(smtp_host: &str, account: &Account, body: &str) {
     let message = MessageBuilder::new()
         .from(("John Doe", "john@example.com"))
         .to(account.email.as_str())
         .subject("Cointhink api token")
-        .text_body(format!("{}", account.token));
+        .text_body(body);
     println!("smtp {} to {}", smtp_host, account.email);
     SmtpClientBuilder::new(smtp_host, 25)
         .allow_invalid_certs()
