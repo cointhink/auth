@@ -1,4 +1,4 @@
-use account::Account;
+use crate::account::Account;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use rocket::http::Status;
 use rocket::response::status;
@@ -17,6 +17,8 @@ extern crate rocket;
 pub struct AppConfig {
     smtp: String,
     site: String,
+    from_name: String,
+    from_email: String,
 }
 
 #[get("/auth/<token>")]
@@ -33,10 +35,11 @@ async fn register(
     db: Connection<sql::AuthDb>,
     email: &str,
 ) -> String {
-    let account = sql::find_or_create_by_email(db, email).await;
-    let body = format!("{}/{}", app_config.site, account.token);
-    send_email(&app_config.smtp, &account, &body).await;
-    format!("{}", account.email)
+    let acct = sql::find_or_create_by_email(db, email).await;
+    let body = format!("{}/{}", app_config.site, acct.token);
+    let email = build_message(&app_config.from_name, &app_config.from_email, &acct, &body);
+    send_email(&app_config.smtp, email).await;
+    format!("{}", acct.email)
 }
 
 #[launch]
@@ -47,20 +50,28 @@ fn rocket() -> _ {
         .mount("/", routes![auth, register])
 }
 
-async fn send_email(smtp_host: &str, account: &Account, body: &str) {
-    let message = MessageBuilder::new()
-        .from(("John Doe", "john@example.com"))
+fn build_message<'b>(
+    from_name: &'b str,
+    from_email: &'b str,
+    account: &'b Account,
+    body: &'b str,
+) -> MessageBuilder<'b> {
+    MessageBuilder::new()
+        .from((from_name, from_email))
         .to(account.email.as_str())
         .subject("Cointhink api token")
-        .text_body(body);
-    println!("smtp {} to {} {}", smtp_host, account.email, account.token);
+        .text_body(body)
+}
+
+async fn send_email<'b>(smtp_host: &str, email: MessageBuilder<'b>) {
+    println!("smtp {} to {:?}", smtp_host, email);
     SmtpClientBuilder::new(smtp_host, 25)
         .allow_invalid_certs()
         .implicit_tls(false)
         .connect()
         .await
         .unwrap()
-        .send(message)
+        .send(email)
         .await
         .unwrap();
 }
