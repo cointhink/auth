@@ -2,9 +2,8 @@ use rocket_db_pools::{
     sqlx::{self, Postgres, Row},
     Connection, Database,
 };
-use uuid::Uuid;
 
-use crate::account::Account;
+use crate::account::{self, Account};
 
 #[derive(Database)]
 #[database("auth_db")]
@@ -21,9 +20,9 @@ impl Account {
 
     pub fn from_email(email: &str) -> Account {
         Account {
-            id: Uuid::new_v4().to_string(),
+            id: account::get_nice_rand_str(),
             email: email.to_string(),
-            token: Uuid::new_v4().to_string(),
+            token: account::get_nice_rand_str(),
         }
     }
 }

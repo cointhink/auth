@@ -53,7 +53,7 @@ async fn send_email(smtp_host: &str, account: &Account, body: &str) {
         .to(account.email.as_str())
         .subject("Cointhink api token")
         .text_body(body);
-    println!("smtp {} to {}", smtp_host, account.email);
+    println!("smtp {} to {} {}", smtp_host, account.email, account.token);
     SmtpClientBuilder::new(smtp_host, 25)
         .allow_invalid_certs()
         .implicit_tls(false)
