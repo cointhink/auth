@@ -1,4 +1,6 @@
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
+use rocket::http::Status;
+use rocket::response::status;
 use rocket::State;
 use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket_db_pools::{Connection, Database};
@@ -10,10 +12,10 @@ mod sql;
 extern crate rocket;
 
 #[get("/auth/<token>")]
-async fn auth(db: Connection<sql::AuthDb>, token: &str) -> String {
+async fn auth(db: Connection<sql::AuthDb>, token: &str) -> status::Custom<String> {
     match sql::find_by_token(db, token).await {
-        Some(account) => account.email,
-        None => "bad token".to_owned(),
+        Some(account) => status::Custom(Status::Ok, account.email),
+        None => status::Custom(Status::new(401), "bad token".to_owned()),
     }
 }
 
@@ -48,7 +50,7 @@ async fn send_email(smtp_host: &str, account: &Account) {
         .to(account.email.as_str())
         .subject("Cointhink api token")
         .text_body(format!("{}", account.token));
-    println!("smtp {}", smtp_host);
+    println!("smtp {} to {}", smtp_host, account.email);
     SmtpClientBuilder::new(smtp_host, 25)
         .allow_invalid_certs()
         .implicit_tls(false)
@@ -79,9 +81,9 @@ mod test {
     #[test]
     fn auth() {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let token = "abcd1234";
+        let token = "non-existant-token";
         let response = client.get(format!("/auth/{}", token)).dispatch();
-        assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.into_string(), Some(token.into()));
+        assert_eq!(response.status(), Status::new(401));
+        assert_eq!(response.into_string().unwrap(), "bad token");
     }
 }
