@@ -2,6 +2,7 @@ use crate::account::Account;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use rocket::http::Status;
 use rocket::response::status;
+use rocket::serde::json::Json;
 use rocket::State;
 use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket_db_pools::{Connection, Database};
@@ -21,11 +22,12 @@ pub struct AppConfig {
     from_email: String,
 }
 
+// CORS error: No 'Access-Control-Allow-Origin'
 #[get("/auth/<token>")]
-async fn auth(db: Connection<sql::AuthDb>, token: &str) -> status::Custom<String> {
+async fn auth(db: Connection<sql::AuthDb>, token: &str) -> status::Custom<Json<String>> {
     match sql::find_by_token(db, token).await {
-        Some(account) => status::Custom(Status::Ok, account.email),
-        None => status::Custom(Status::new(401), "bad token".to_owned()),
+        Some(account) => status::Custom(Status::Ok, Json(account.email)),
+        None => status::Custom(Status::Unauthorized, Json("bad token".to_owned())),
     }
 }
 

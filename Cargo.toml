@@ -11,7 +11,7 @@ figment = { version = "0.10.10", features = ["serde_json"] }
 mail-send = "0.4.0"
 postgres = "0.19.7"
 rand = "0.8.5"
-rocket = { version = "=0.5.0-rc.3", features = ["serde_json"] }
+rocket = { version = "=0.5.0-rc.3", features = ["serde_json", "json"] }
 rocket_db_pools = { version = "0.1.0-rc.3", features = ["sqlx_postgres"] }
 serde = "1.0.188"
 sqlx = { version = "0.7.1", features = ["migrate"] }
