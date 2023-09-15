@@ -1,6 +1,6 @@
 use crate::account::Account;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
-use rocket::http::{Header, Status};
+use rocket::http::{Cookie, CookieJar, Header, Status};
 use rocket::response::status;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
@@ -36,9 +36,17 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
 }
 
 #[get("/auth/<token>")]
-async fn auth(db: Connection<sql::AuthDb>, token: &str) -> Cors<status::Custom<Json<String>>> {
+async fn auth(
+    db: Connection<sql::AuthDb>,
+    cookies: &CookieJar<'_>,
+    token: &str,
+) -> Cors<status::Custom<Json<String>>> {
     Cors(match sql::find_by_token(db, token).await {
-        Some(account) => status::Custom(Status::Ok, Json(account.email)),
+        Some(account) => {
+            let token_cookie = Cookie::build("token", token.to_owned()).finish();
+            cookies.add(token_cookie);
+            status::Custom(Status::Ok, Json(account.email))
+        }
         None => status::Custom(Status::Unauthorized, Json("bad token".to_owned())),
     })
 }
