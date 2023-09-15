@@ -1,10 +1,11 @@
 use crate::account::Account;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
-use rocket::http::Status;
+use rocket::http::{Header, Status};
 use rocket::response::status;
+use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::State;
 use rocket::{fairing::AdHoc, serde::Deserialize};
+use rocket::{Request, State};
 use rocket_db_pools::{Connection, Database};
 
 mod account;
@@ -22,13 +23,24 @@ pub struct AppConfig {
     from_email: String,
 }
 
-// CORS error: No 'Access-Control-Allow-Origin'
+#[derive(Debug, Clone, PartialEq)]
+pub struct Cors<R>(pub R);
+
+impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
+    #[inline]
+    fn respond_to(self, req: &'r Request<'_>) -> rocket::response::Result<'o> {
+        rocket::Response::build_from(self.0.respond_to(req)?)
+            .header(Header::new("Access-Control-Allow-Origin", "*"))
+            .ok()
+    }
+}
+
 #[get("/auth/<token>")]
-async fn auth(db: Connection<sql::AuthDb>, token: &str) -> status::Custom<Json<String>> {
-    match sql::find_by_token(db, token).await {
+async fn auth(db: Connection<sql::AuthDb>, token: &str) -> Cors<status::Custom<Json<String>>> {
+    Cors(match sql::find_by_token(db, token).await {
         Some(account) => status::Custom(Status::Ok, Json(account.email)),
         None => status::Custom(Status::Unauthorized, Json("bad token".to_owned())),
-    }
+    })
 }
 
 #[get("/register/<email>")]
