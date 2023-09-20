@@ -51,7 +51,7 @@ async fn auth(
     })
 }
 
-#[get("/register/<email>")]
+#[post("/register/<email>")]
 async fn register(
     app_config: &State<AppConfig>,
     db: Connection<sql::AuthDb>,
