@@ -56,12 +56,12 @@ async fn register(
     app_config: &State<AppConfig>,
     db: Connection<sql::AuthDb>,
     email: &str,
-) -> String {
+) -> Cors<String> {
     let acct = sql::find_or_create_by_email(db, email).await;
     let body = format!("{}{}", app_config.site, acct.token);
     let email = build_message(&app_config.from_name, &app_config.from_email, &acct, &body);
     send_email(&app_config.smtp, email).await;
-    format!("{}", acct.email)
+    Cors(format!("{}", acct.email))
 }
 
 #[launch]
