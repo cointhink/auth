@@ -1,4 +1,5 @@
-use crate::account::Account;
+use crate::models::account::Account;
+use crate::models::pool::Pool;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use rocket::http::{Cookie, CookieJar, Header, Status};
 use rocket::response::status;
@@ -7,8 +8,9 @@ use rocket::serde::json::Json;
 use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket::{Request, State};
 use rocket_db_pools::{Connection, Database};
+use sql::top_pools;
 
-mod account;
+mod models;
 mod sql;
 
 #[macro_use]
@@ -33,6 +35,12 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
             .header(Header::new("Access-Control-Allow-Origin", "*"))
             .ok()
     }
+}
+
+#[get("/pools/top")]
+async fn pools_top(db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
+    let fba = top_pools(db).await;
+    Cors(Json(fba))
 }
 
 #[get("/auth/<token>")]
@@ -78,7 +86,7 @@ fn rocket() -> _ {
         // }))
         .attach(sql::AuthDb::init())
         .attach(AdHoc::config::<AppConfig>())
-        .mount("/", routes![auth, register])
+        .mount("/", routes![auth, register, pools_top])
 }
 
 fn build_message<'b>(

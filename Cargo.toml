@@ -14,5 +14,5 @@ rand = "0.8.5"
 rocket = { version = "=0.5.0-rc.3", features = ["serde_json", "json"] }
 rocket_db_pools = { version = "0.1.0-rc.3", features = ["sqlx_postgres"] }
 serde = "1.0.188"
-sqlx = { version = "0.7.1", features = ["migrate"] }
+sqlx = { version = "0.7.2", features = ["migrate"] }
 toml = "0.7.6"

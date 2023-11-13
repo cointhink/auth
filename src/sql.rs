@@ -3,7 +3,10 @@ use rocket_db_pools::{
     Connection, Database,
 };
 
-use crate::account::{self, Account};
+use crate::models::{
+    account::{self, Account},
+    pool::{self, Pool},
+};
 
 #[derive(Database)]
 #[database("auth_db")]
@@ -26,22 +29,6 @@ impl Account {
         }
     }
 }
-
-// pub fn setup(config: crate::AppConfig) -> Client {
-//     println!("{:?}", config.url);
-//     let mut client = Client::connect(&config.url, NoTls).unwrap();
-//     client
-//         .execute(
-//             "CREATE TABLE IF NOT EXISTS auth (
-//             id VARCHAR(36),
-//             email VARCHAR(256),
-//             token VARCHAR(36)
-//         )",
-//             &[],
-//         )
-//         .unwrap();
-//     client
-// }
 
 pub async fn find_or_create_by_email(mut db: Connection<AuthDb>, email: &str) -> Account {
     match sqlx::query("SELECT * FROM auth WHERE email = $1")
@@ -77,4 +64,19 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
         .execute(&mut *db)
         .await
         .unwrap();
+}
+
+pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<Pool> {
+    let sql = "select pool_contract_address, sum(in0) from swaps group by pool_contract_address order by sum desc";
+    match sqlx::query(sql).fetch_all(&mut *db).await {
+        Ok(rows) => rows
+            .iter()
+            .map(|r| Pool {
+                contract_address: "same".to_string(),
+                token0: "same".to_string(),
+                token1: "same".to_string(),
+            })
+            .collect(),
+        Err(_e) => vec![],
+    }
 }
