@@ -1,6 +1,6 @@
 use rocket::serde::Serialize;
 use rocket_db_pools::{
-    sqlx::{self, Postgres, Row},
+    sqlx::{self, pool::Pool as Spool, PgConnection, Postgres, Row},
     Connection,
 };
 
@@ -23,10 +23,10 @@ impl Pool {
     }
 }
 
-pub async fn find_by_address(mut db: Connection<AuthDb>, contract_address: &str) -> Option<Pool> {
+pub async fn find_by_address(db: &mut PgConnection, contract_address: &str) -> Option<Pool> {
     match sqlx::query("SELECT * FROM pools WHERE contract_address = $1")
         .bind(contract_address)
-        .fetch_one(&mut *db)
+        .fetch_one(db)
         .await
     {
         Ok(row) => Some(Pool::from_row(&row)),

@@ -38,7 +38,7 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
 }
 
 #[get("/pools/top")]
-async fn pools_top(db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
+async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
     let fba = top_pools(db).await;
     Cors(Json(fba))
 }
@@ -51,7 +51,7 @@ async fn auth(
 ) -> Cors<status::Custom<Json<String>>> {
     Cors(match sql::find_by_token(db, token).await {
         Some(account) => {
-            let token_cookie = Cookie::build("token", token.to_owned()).finish();
+            let token_cookie = Cookie::build(("token", token.to_owned()));
             cookies.add(token_cookie);
             status::Custom(Status::Ok, Json(account.email))
         }
