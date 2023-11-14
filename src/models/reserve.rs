@@ -1,30 +1,27 @@
-use num_traits::Num;
-use pg_bigdecimal::BigUint;
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
+use sqlx::types::BigDecimal;
 
 #[derive(Serialize, Debug)]
 pub struct Reserve {
     pub block_number: u32,
-    #[serde(serialize_with = "biguint_to_str")]
-    pub x: BigUint,
-    #[serde(serialize_with = "biguint_to_str")]
-    pub y: BigUint,
+    pub x: String,
+    pub y: String,
 }
 
-pub fn biguint_to_str<S>(x: &BigUint, s: S) -> Result<S::Ok, S::Error>
+pub fn bigdecimal_to_str<S>(x: &BigDecimal, s: S) -> Result<S::Ok, S::Error>
 where
     S: rocket::serde::Serializer,
 {
-    s.serialize_str(&x.to_str_radix(10))
+    s.serialize_str(&x.to_string())
 }
 
 impl Reserve {
     pub fn from_row(row: &<Postgres as rocket_db_pools::sqlx::Database>::Row) -> Reserve {
         Reserve {
             block_number: row.get::<i32, &str>("block_number") as u32,
-            x: BigUint::from_str_radix(row.get::<&str, &str>("x"), 10).unwrap(),
-            y: BigUint::from_str_radix(row.get::<&str, &str>("y"), 10).unwrap(),
+            x: row.get::<String, &str>("x"),
+            y: row.get::<String, &str>("y"),
         }
     }
 }

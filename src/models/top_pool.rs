@@ -1,5 +1,5 @@
-use pg_bigdecimal::BigUint;
 use rocket::serde::Serialize;
+use sqlx::types::BigDecimal;
 
 use super::{pool::Pool, reserve::Reserve};
 
@@ -7,8 +7,8 @@ use super::{pool::Pool, reserve::Reserve};
 pub struct TopPool {
     pub pool: Pool,
     pub reserve: Reserve,
-    #[serde(serialize_with = "super::reserve::biguint_to_str")]
-    pub sum0: BigUint,
-    #[serde(serialize_with = "super::reserve::biguint_to_str")]
-    pub sum1: BigUint,
+    #[serde(serialize_with = "super::reserve::bigdecimal_to_str")]
+    pub sum0: BigDecimal,
+    #[serde(serialize_with = "super::reserve::bigdecimal_to_str")]
+    pub sum1: BigDecimal,
 }

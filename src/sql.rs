@@ -1,5 +1,3 @@
-use num_traits::Num;
-use pg_bigdecimal::BigUint;
 use rocket_db_pools::{
     sqlx::{self, Postgres, Row},
     Connection, Database,
@@ -71,7 +69,7 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
 }
 
 pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<TopPool> {
-    let sql = "select pool_contract_address, sum(in0) from swaps group by pool_contract_address order by sum desc limit 10";
+    let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in1) as sum_in1 from swaps group by pool_contract_address order by sum_in0 desc limit 10";
     match sqlx::query(sql).fetch_all(&mut **db).await {
         Ok(rows) => {
             let mut r = vec![];
@@ -86,8 +84,8 @@ pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<TopPool> {
                 let top_pool = TopPool {
                     pool,
                     reserve,
-                    sum0: BigUint::from_str_radix("0", 10).unwrap(),
-                    sum1: BigUint::from_str_radix("0", 10).unwrap(),
+                    sum0: row.get::<sqlx::types::BigDecimal, &str>("sum_in0"),
+                    sum1: row.get::<sqlx::types::BigDecimal, &str>("sum_in1"),
                 };
                 r.push(top_pool)
             }
