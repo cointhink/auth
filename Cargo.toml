@@ -9,6 +9,7 @@ edition = "2021"
 bs58 = "0.5.0"
 figment = { version = "0.10.10", features = ["serde_json"] }
 mail-send = "0.4.0"
+pg_bigdecimal = "0.1.5"
 postgres = "0.19.7"
 rand = "0.8.5"
 rocket = { version = "=0.5.0-rc.4", features = ["serde_json", "json"] }

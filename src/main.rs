@@ -38,7 +38,7 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
 }
 
 #[get("/pools/top")]
-async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
+async fn pools_top(db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
     Cors(Json(top_pools(db).await))
 }
 

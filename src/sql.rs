@@ -1,12 +1,11 @@
-use rocket::futures::future::join_all;
 use rocket_db_pools::{
-    sqlx::{self, postgres::PgRow, Postgres, Row},
+    sqlx::{self, Postgres, Row},
     Connection, Database,
 };
 
 use crate::models::{
     account::{self, Account},
-    pool::{self, find_by_address, Pool},
+    pool::{self, Pool},
 };
 
 #[derive(Database)]
