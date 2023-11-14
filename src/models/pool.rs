@@ -1,10 +1,5 @@
 use rocket::serde::Serialize;
-use rocket_db_pools::{
-    sqlx::{self, pool::Pool as Spool, PgConnection, Postgres, Row},
-    Connection,
-};
-
-use crate::sql::AuthDb;
+use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 
 #[derive(Serialize, Debug)]
 pub struct Pool {
