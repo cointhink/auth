@@ -1,3 +1,5 @@
+use num_traits::Num;
+use pg_bigdecimal::BigUint;
 use rocket_db_pools::{
     sqlx::{self, Postgres, Row},
     Connection, Database,
@@ -5,7 +7,9 @@ use rocket_db_pools::{
 
 use crate::models::{
     account::{self, Account},
-    pool::{self, Pool},
+    pool::{self},
+    reserve,
+    top_pool::TopPool,
 };
 
 #[derive(Database)]
@@ -66,17 +70,26 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
         .unwrap();
 }
 
-pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<Pool> {
+pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<TopPool> {
     let sql = "select pool_contract_address, sum(in0) from swaps group by pool_contract_address order by sum desc limit 10";
     match sqlx::query(sql).fetch_all(&mut **db).await {
         Ok(rows) => {
             let mut r = vec![];
             for row in rows {
-                r.push(
-                    pool::find_by_address(&mut **db, row.get("pool_contract_address"))
-                        .await
-                        .unwrap(),
-                )
+                let pool_contract_address = row.get("pool_contract_address");
+                let pool = pool::find_by_address(&mut **db, pool_contract_address)
+                    .await
+                    .unwrap();
+                let reserve = reserve::find_by_address(&mut **db, pool_contract_address)
+                    .await
+                    .unwrap();
+                let top_pool = TopPool {
+                    pool,
+                    reserve,
+                    sum0: BigUint::from_str_radix("0", 10).unwrap(),
+                    sum1: BigUint::from_str_radix("0", 10).unwrap(),
+                };
+                r.push(top_pool)
             }
             r
         }

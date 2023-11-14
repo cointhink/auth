@@ -12,12 +12,3 @@ pub struct TopPool {
     #[serde(serialize_with = "super::reserve::biguint_to_str")]
     pub sum1: BigUint,
 }
-
-pub fn new(pool: Pool, reserve: Reserve, sum0: BigUint, sum1: BigUint) {
-    TopPool {
-        pool,
-        reserve,
-        sum0,
-        sum1,
-    };
-}
