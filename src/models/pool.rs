@@ -1,11 +1,26 @@
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
+use sqlx::types::BigDecimal;
+
+use super::{coin::Coin, reserve::Reserve};
 
 #[derive(Serialize, Debug)]
 pub struct Pool {
     pub contract_address: String,
     pub token0: String,
     pub token1: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reserve: Option<Reserve>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub coin0: Option<Coin>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub coin1: Option<Coin>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "super::reserve::optbigdecimal_to_str")]
+    pub sum0: Option<BigDecimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "super::reserve::optbigdecimal_to_str")]
+    pub sum1: Option<BigDecimal>,
 }
 
 impl Pool {
@@ -14,6 +29,11 @@ impl Pool {
             contract_address: row.get::<String, &str>("contract_address"),
             token0: row.get::<String, &str>("token0"),
             token1: row.get::<String, &str>("token1"),
+            reserve: None,
+            coin0: None,
+            coin1: None,
+            sum0: None,
+            sum1: None,
         }
     }
 }

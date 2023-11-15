@@ -16,6 +16,13 @@ where
     s.serialize_str(&x.to_string())
 }
 
+pub fn optbigdecimal_to_str<S>(x: &Option<BigDecimal>, s: S) -> Result<S::Ok, S::Error>
+where
+    S: rocket::serde::Serializer,
+{
+    bigdecimal_to_str(&x.to_owned().unwrap(), s)
+}
+
 impl Reserve {
     pub fn from_row(row: &<Postgres as rocket_db_pools::sqlx::Database>::Row) -> Reserve {
         Reserve {

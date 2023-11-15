@@ -5,9 +5,9 @@ use rocket_db_pools::{
 
 use crate::models::{
     account::{self, Account},
-    pool::{self},
+    coin,
+    pool::{self, Pool},
     reserve,
-    top_pool::TopPool,
 };
 
 #[derive(Database)]
@@ -68,26 +68,31 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
         .unwrap();
 }
 
-pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<TopPool> {
+pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<Pool> {
     let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in1) as sum_in1 from swaps group by pool_contract_address order by sum_in0 desc limit 10";
     match sqlx::query(sql).fetch_all(&mut **db).await {
         Ok(rows) => {
             let mut r = vec![];
             for row in rows {
                 let pool_contract_address = row.get("pool_contract_address");
-                let pool = pool::find_by_address(&mut **db, pool_contract_address)
+                let mut pool = pool::find_by_address(&mut **db, pool_contract_address)
                     .await
                     .unwrap();
                 let reserve = reserve::find_by_address(&mut **db, pool_contract_address)
                     .await
                     .unwrap();
-                let top_pool = TopPool {
-                    pool,
-                    reserve,
-                    sum0: row.get::<sqlx::types::BigDecimal, &str>("sum_in0"),
-                    sum1: row.get::<sqlx::types::BigDecimal, &str>("sum_in1"),
-                };
-                r.push(top_pool)
+                pool.reserve = Some(reserve);
+                pool.sum0 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in0"));
+                pool.sum1 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1"));
+                let coin0 = coin::find_by_address(&mut **db, &pool.token0)
+                    .await
+                    .unwrap();
+                pool.coin0 = Some(coin0);
+                let coin1 = coin::find_by_address(&mut **db, &pool.token1)
+                    .await
+                    .unwrap();
+                pool.coin1 = Some(coin1);
+                r.push(pool)
             }
             r
         }
