@@ -27,6 +27,9 @@ pub struct Pool {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "super::reserve::optbigdecimal_to_str")]
     pub sum1_eth: Option<BigDecimal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "super::reserve::optbigdecimal_to_str")]
+    pub sum_eth: Option<BigDecimal>,
 }
 
 impl Pool {
@@ -42,6 +45,7 @@ impl Pool {
             sum0_eth: None,
             sum1: None,
             sum1_eth: None,
+            sum_eth: None,
         }
     }
 }

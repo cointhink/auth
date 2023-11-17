@@ -86,6 +86,7 @@ pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<Pool> {
                 pool.sum0_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in0_eth"));
                 pool.sum1 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1"));
                 pool.sum1_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1_eth"));
+                pool.sum_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_eth"));
                 let coin0 = coin::find_by_address(&mut **db, &pool.token0)
                     .await
                     .unwrap();
