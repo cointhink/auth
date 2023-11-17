@@ -5,7 +5,7 @@ use rocket_db_pools::{
 
 use crate::models::{
     account::{self, Account},
-    coin,
+    block, coin,
     pool::{self, Pool},
     reserve,
 };
@@ -69,6 +69,10 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
 }
 
 pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<Pool> {
+    let latest_block;
+    {
+        lastest_block = block::find_latest(&mut **db);
+    }
     let sql = "select pool_contract_address, sum(in0_eth) as sum_in0, sum(in1_eth) as sum_in1 from swaps group by pool_contract_address order by sum_in0 desc limit 10";
     match sqlx::query(sql).fetch_all(&mut **db).await {
         Ok(rows) => {
