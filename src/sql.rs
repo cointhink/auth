@@ -69,7 +69,7 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
 }
 
 pub async fn top_pools(mut db: Connection<AuthDb>) -> Vec<Pool> {
-    let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth from swaps group by pool_contract_address order by sum_in0 desc limit 10";
+    let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth, sum(in0_eth + in1_eth) as sum_eth from swaps group by pool_contract_address order by sum_eth desc limit 10";
     match sqlx::query(sql).fetch_all(&mut **db).await {
         Ok(rows) => {
             let mut r = vec![];
