@@ -68,11 +68,15 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
         .unwrap();
 }
 
-pub async fn top_pools(mut db: Connection<AuthDb>, start_block: u32, stop_block: u32) -> Vec<Pool> {
+pub async fn top_pools(
+    mut db: Connection<AuthDb>,
+    start_block: block::Number,
+    stop_block: block::Number,
+) -> Vec<Pool> {
     let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth, sum(in0_eth + in1_eth) as sum_eth from swaps where block_number > $1 and block_number <= $2 group by pool_contract_address order by sum_eth desc limit 10";
     match sqlx::query(sql)
-        .bind(start_block as i32)
-        .bind(stop_block as i32)
+        .bind::<i32>(start_block.into())
+        .bind::<i32>(stop_block.into())
         .fetch_all(&mut **db)
         .await
     {

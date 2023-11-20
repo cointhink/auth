@@ -2,16 +2,39 @@ use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 
 #[derive(Debug, Serialize)]
+pub struct Number(u32);
+
+impl From<i32> for Number {
+    fn from(value: i32) -> Self {
+        Number(value as u32)
+    }
+}
+
+impl Number {
+    pub fn hours_ago(&self, hours: u32) -> Number {
+        let blocks_per_hour = 12 * 60;
+        Number(self.0 - (hours * blocks_per_hour))
+    }
+}
+
+impl From<Number> for i32 {
+    fn from(value: Number) -> Self {
+        value.0 as i32
+    }
+}
+
+#[derive(Debug, Serialize)]
 pub struct Block {
     pub hash: String,
-    pub number: u32,
+    pub number: Number,
     pub timestamp: u32,
 }
+
 impl Block {
     pub fn from_row(row: &<Postgres as rocket_db_pools::sqlx::Database>::Row) -> Block {
         Block {
             hash: row.get::<String, &str>("hash"),
-            number: row.get::<i32, &str>("number") as u32,
+            number: row.get::<i32, &str>("number").into(),
             timestamp: row.get::<i32, &str>("timestamp") as u32,
         }
     }

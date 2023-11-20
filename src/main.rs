@@ -42,7 +42,9 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
 #[get("/pools/top")]
 async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
     let latest_block = block::find_latest(&mut db).await.unwrap();
-    Cors(Json(top_pools(db, 1, latest_block.number).await))
+    Cors(Json(
+        top_pools(db, latest_block.number.hours_ago(24), latest_block.number).await,
+    ))
 }
 
 #[get("/auth/<token>")]
