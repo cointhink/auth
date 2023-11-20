@@ -34,10 +34,12 @@ impl Reserve {
 }
 
 pub async fn find_by_address(db: &mut PgConnection, contract_address: &str) -> Option<Reserve> {
-    match sqlx::query("SELECT * FROM reserves WHERE contract_address = $1")
-        .bind(contract_address)
-        .fetch_one(db)
-        .await
+    match sqlx::query(
+        "SELECT * FROM reserves WHERE contract_address = $1 order by block_number desc limit 1",
+    )
+    .bind(contract_address)
+    .fetch_one(db)
+    .await
     {
         Ok(row) => Some(Reserve::from_row(&row)),
         Err(_e) => None,
