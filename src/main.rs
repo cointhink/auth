@@ -1,6 +1,8 @@
 use crate::models::account::Account;
+use crate::models::block::Block;
 use crate::models::pool::Pool;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
+use models::block;
 use rocket::http::{Cookie, CookieJar, Header, Status};
 use rocket::response::status;
 use rocket::response::Responder;
@@ -38,8 +40,9 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
 }
 
 #[get("/pools/top")]
-async fn pools_top(db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
-    Cors(Json(top_pools(db).await))
+async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
+    let latest_block = block::find_latest(&mut db).await.unwrap();
+    Cors(Json(top_pools(db, 1, latest_block.number).await))
 }
 
 #[get("/auth/<token>")]
