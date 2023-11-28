@@ -102,7 +102,7 @@ fn build_message<'b>(
     MessageBuilder::new()
         .from((from_name, from_email))
         .to(account.email.as_str())
-        .subject("Cointhink api token")
+        .subject("Login Magic-Link")
         .text_body(body)
 }
 
