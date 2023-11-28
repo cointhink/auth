@@ -113,7 +113,13 @@ fn build_message<'b>(
         .register_template_file("register_subject", "emails/register_subject.hbs")
         .unwrap();
     let data: HashMap<&str, &str> = HashMap::new();
-    let subject = handlebars.render("register_subject", &data).unwrap();
+    let subject = handlebars
+        .render("register_subject", &data)
+        .unwrap()
+        .lines()
+        .next() // first line only
+        .unwrap()
+        .to_string();
 
     MessageBuilder::new()
         .from((from_name, from_email))
