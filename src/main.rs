@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use crate::models::account::Account;
-use crate::models::block::Block;
 use crate::models::pool::Pool;
+use handlebars::Handlebars;
 use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use models::block;
 use rocket::http::{Cookie, CookieJar, Header, Status};
@@ -70,8 +72,8 @@ async fn register(
     email: &str,
 ) -> Cors<Json<String>> {
     let acct = sql::find_or_create_by_email(db, email).await;
-    let body = format!("{}{}", app_config.site, acct.token);
-    let email = build_message(&app_config.from_name, &app_config.from_email, &acct, &body);
+    let url = format!("{}{}", app_config.site, acct.token);
+    let email = build_message(&app_config.from_name, &app_config.from_email, &acct, &url);
     send_email(&app_config.smtp, email).await;
     Cors(Json(format!("{}", acct.email)))
 }
@@ -97,12 +99,26 @@ fn build_message<'b>(
     from_name: &'b str,
     from_email: &'b str,
     account: &'b Account,
-    body: &'b str,
+    url: &'b str,
 ) -> MessageBuilder<'b> {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_template_file("register_body", "emails/register_body.hbs")
+        .unwrap();
+    let mut data = HashMap::new();
+    data.insert("url", url);
+    let body = handlebars.render("register_body", &data).unwrap();
+
+    handlebars
+        .register_template_file("register_subject", "emails/register_subject.hbs")
+        .unwrap();
+    let data: HashMap<&str, &str> = HashMap::new();
+    let subject = handlebars.render("register_subject", &data).unwrap();
+
     MessageBuilder::new()
         .from((from_name, from_email))
         .to(account.email.as_str())
-        .subject("Login Magic-Link")
+        .subject(subject)
         .text_body(body)
 }
 
