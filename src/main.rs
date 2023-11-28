@@ -102,6 +102,7 @@ fn build_message<'b>(
     url: &'b str,
 ) -> MessageBuilder<'b> {
     let mut handlebars = Handlebars::new();
+    handlebars.register_escape_fn(handlebars::no_escape);
     handlebars
         .register_template_file("register_body", "emails/register_body.hbs")
         .unwrap();
