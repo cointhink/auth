@@ -73,7 +73,7 @@ pub async fn top_pools(
     start_block: block::Number,
     stop_block: block::Number,
 ) -> Vec<Pool> {
-    let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth, sum(in0_eth + in1_eth) as sum_eth from swaps where block_number > $1 and block_number <= $2 group by pool_contract_address order by sum_eth desc limit 10";
+    let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth, sum(in0_eth + in1_eth) as sum_eth, count(NULLIF(in0,0)) as count0, count(NULLIF(in1,0)) as count1 from swaps where block_number > $1 and block_number <= $2 group by pool_contract_address order by sum_eth desc limit 10";
     match sqlx::query(sql)
         .bind::<i32>(start_block.into())
         .bind::<i32>(stop_block.into())
@@ -96,6 +96,8 @@ pub async fn top_pools(
                 pool.sum1 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1"));
                 pool.sum1_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1_eth"));
                 pool.sum_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_eth"));
+                pool.count0 = Some(row.get::<i64, &str>("count0"));
+                pool.count1 = Some(row.get::<i64, &str>("count1"));
                 let coin0 = coin::find_by_address(&mut **db, &pool.token0)
                     .await
                     .unwrap();
