@@ -1,7 +1,7 @@
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Number(u32);
 
 impl From<i32> for Number {
@@ -17,8 +17,8 @@ impl Number {
     }
 }
 
-impl From<Number> for i32 {
-    fn from(value: Number) -> Self {
+impl From<&Number> for i32 {
+    fn from(value: &Number) -> Self {
         value.0 as i32
     }
 }

@@ -2,7 +2,10 @@ use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
 
-use super::{coin::Coin, reserve::Reserve};
+use super::{
+    coin::Coin,
+    reserve::{self, Reserve},
+};
 
 #[derive(Serialize, Debug)]
 pub struct Pool {
@@ -19,6 +22,8 @@ pub struct Pool {
     pub count0: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub count1: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reserve_summary: Option<reserve::Summary>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "super::reserve::optbigdecimal_to_str")]
     pub sum0: Option<BigDecimal>,
@@ -47,6 +52,7 @@ impl Pool {
             coin1: None,
             count0: None,
             count1: None,
+            reserve_summary: None,
             sum0: None,
             sum0_eth: None,
             sum1: None,

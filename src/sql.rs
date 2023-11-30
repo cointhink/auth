@@ -70,8 +70,8 @@ pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
 
 pub async fn top_pools(
     mut db: Connection<AuthDb>,
-    start_block: block::Number,
-    stop_block: block::Number,
+    start_block: &block::Number,
+    stop_block: &block::Number,
 ) -> Vec<Pool> {
     let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth, sum(in0_eth + in1_eth) as sum_eth, count(NULLIF(in0,0)) as count0, count(NULLIF(in1,0)) as count1 from swaps where block_number > $1 and block_number <= $2 group by pool_contract_address order by sum_eth desc limit 10";
     match sqlx::query(sql)
@@ -90,7 +90,11 @@ pub async fn top_pools(
                 let reserve = reserve::find_by_address(&mut **db, pool_contract_address)
                     .await
                     .unwrap();
+                let reserve_summary =
+                    reserve::summarize(&mut **db, pool_contract_address, start_block, stop_block)
+                        .await;
                 pool.reserve = Some(reserve);
+                pool.reserve_summary = Some(reserve_summary);
                 pool.sum0 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in0"));
                 pool.sum0_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in0_eth"));
                 pool.sum1 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1"));
