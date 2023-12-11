@@ -90,11 +90,20 @@ pub async fn top_pools(
                 let reserve = reserve::find_by_address(&mut **db, pool_contract_address)
                     .await
                     .unwrap();
-                let reserve_summary =
-                    reserve::summarize(&mut **db, pool_contract_address, start_block, stop_block)
-                        .await;
                 pool.reserve = Some(reserve);
-                pool.reserve_summary = Some(reserve_summary);
+                pool.reserve_summary = match pool.has_cash_token() {
+                    true => Some(
+                        reserve::summarize(
+                            &mut **db,
+                            pool_contract_address,
+                            start_block,
+                            stop_block,
+                            pool.cash_token_is_1(),
+                        )
+                        .await,
+                    ),
+                    false => None,
+                };
                 pool.sum0 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in0"));
                 pool.sum0_eth = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in0_eth"));
                 pool.sum1 = Some(row.get::<sqlx::types::BigDecimal, &str>("sum_in1"));

@@ -3,7 +3,7 @@ use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
 
 use super::{
-    coin::Coin,
+    coin::{self, Coin},
     reserve::{self, Reserve},
 };
 
@@ -59,6 +59,16 @@ impl Pool {
             sum1_eth: None,
             sum_eth: None,
         }
+    }
+
+    pub(crate) fn has_cash_token(&self) -> bool {
+        self.cash_token_is_0() || self.cash_token_is_1()
+    }
+    pub(crate) fn cash_token_is_0(&self) -> bool {
+        coin::is_cash_token(&self.token0)
+    }
+    pub(crate) fn cash_token_is_1(&self) -> bool {
+        coin::is_cash_token(&self.token1)
     }
 }
 

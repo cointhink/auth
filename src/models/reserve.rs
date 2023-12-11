@@ -15,6 +15,7 @@ pub struct Reserve {
 pub struct Summary {
     pub start_block_number: block::Number,
     pub stop_block_number: block::Number,
+    pub dependent_variable: String,
     pub count: u64,
     #[serde(serialize_with = "super::reserve::optbigdecimal_to_str")]
     pub stddev: Option<BigDecimal>,
@@ -69,9 +70,11 @@ pub async fn summarize(
     contract_address: &str,
     start_block_number: &block::Number,
     stop_block_number: &block::Number,
+    coin_cash_order: bool,
 ) -> Summary {
+    let dependent_var = if coin_cash_order { "x" } else { "y" };
     let row = sqlx::query(
-        "SELECT stddev_pop(x::numeric), count(x), min(x::numeric), max(x::numeric)  FROM reserves WHERE contract_address = $1 and block_number > $2 and block_number <= $3",
+        &format!("SELECT stddev_pop({}::numeric), count(*), min({}::numeric), max({}::numeric)  FROM reserves WHERE contract_address = $1 and block_number > $2 and block_number <= $3", dependent_var, dependent_var, dependent_var),
     )
     .bind(contract_address)
     .bind::<i32>(start_block_number.into())
@@ -81,6 +84,7 @@ pub async fn summarize(
     return Summary {
         start_block_number: start_block_number.clone(),
         stop_block_number: stop_block_number.clone(),
+        dependent_variable: dependent_var.to_string(),
         stddev: row.get::<Option<sqlx::types::BigDecimal>, &str>("stddev_pop"),
         count: row.get::<i64, &str>("count") as u64,
         min: row.get::<Option<sqlx::types::BigDecimal>, &str>("min"),
