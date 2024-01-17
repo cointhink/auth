@@ -1,5 +1,7 @@
 use rocket::serde::Serialize;
-use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
+use rocket_db_pools::sqlx::{PgConnection, Postgres, Row};
+
+use crate::sql::query;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct Number(u32);
@@ -41,7 +43,7 @@ impl Block {
 }
 
 pub async fn find_by_number(db: &mut PgConnection, number: u32) -> Option<Block> {
-    match sqlx::query("SELECT * FROM blocks WHERE number = $1")
+    match query("SELECT * FROM blocks WHERE number = $1")
         .bind(number as i32)
         .fetch_one(db)
         .await
@@ -52,7 +54,7 @@ pub async fn find_by_number(db: &mut PgConnection, number: u32) -> Option<Block>
 }
 
 pub async fn find_by_timestamp(db: &mut PgConnection, timestamp: u32) -> Option<Block> {
-    match sqlx::query("SELECT * FROM blocks WHERE timestamp >= $1 order by timestamp asc limit 1")
+    match query("SELECT * FROM blocks WHERE timestamp >= $1 order by timestamp asc limit 1")
         .bind(timestamp as i32)
         .fetch_one(db)
         .await
@@ -63,7 +65,7 @@ pub async fn find_by_timestamp(db: &mut PgConnection, timestamp: u32) -> Option<
 }
 
 pub async fn find_latest(db: &mut PgConnection) -> Option<Block> {
-    match sqlx::query("SELECT * FROM blocks order by number desc limit 1")
+    match query("SELECT * FROM blocks order by number desc limit 1")
         .fetch_one(db)
         .await
     {

@@ -2,6 +2,8 @@ use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
 
+use crate::sql::query;
+
 use super::{
     coin::{self, Coin},
     reserve::{self, Reserve},
@@ -73,7 +75,7 @@ impl Pool {
 }
 
 pub async fn find_by_address(db: &mut PgConnection, contract_address: &str) -> Option<Pool> {
-    match sqlx::query("SELECT * FROM pools WHERE contract_address = $1")
+    match query("SELECT * FROM pools WHERE contract_address = $1")
         .bind(contract_address)
         .fetch_one(db)
         .await

@@ -2,6 +2,8 @@ use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
 
+use crate::sql::query;
+
 use super::block;
 
 #[derive(Serialize, Debug)]
@@ -53,7 +55,7 @@ impl Reserve {
 }
 
 pub async fn find_by_address(db: &mut PgConnection, contract_address: &str) -> Option<Reserve> {
-    match sqlx::query(
+    match query(
         "SELECT * FROM reserves WHERE contract_address = $1 order by block_number desc limit 1",
     )
     .bind(contract_address)
@@ -73,7 +75,7 @@ pub async fn summarize(
     coin_cash_order: bool,
 ) -> Summary {
     let dependent_var = if coin_cash_order { "x" } else { "y" };
-    let row = sqlx::query(
+    let row = query(
         &format!("SELECT stddev_pop({}::numeric), count(*), min({}::numeric), max({}::numeric)  FROM reserves WHERE contract_address = $1 and block_number > $2 and block_number <= $3", dependent_var, dependent_var, dependent_var),
     )
     .bind(contract_address)

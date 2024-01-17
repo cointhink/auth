@@ -1,5 +1,7 @@
 use rocket::serde::Serialize;
-use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
+use rocket_db_pools::sqlx::{PgConnection, Postgres, Row};
+
+use crate::sql::query;
 
 #[derive(Serialize, Debug)]
 pub struct Coin {
@@ -21,7 +23,7 @@ impl Coin {
 }
 
 pub async fn find_by_address(db: &mut PgConnection, contract_address: &str) -> Option<Coin> {
-    match sqlx::query("SELECT * FROM coins WHERE contract_address = $1")
+    match query("SELECT * FROM coins WHERE contract_address = $1")
         .bind(contract_address)
         .fetch_one(db)
         .await

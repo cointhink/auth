@@ -1,5 +1,5 @@
 use rocket_db_pools::{
-    sqlx::{self, Postgres, Row},
+    sqlx::{self, database::HasArguments, query::Query, Postgres, Row},
     Connection, Database,
 };
 
@@ -13,6 +13,13 @@ use crate::models::{
 #[derive(Database)]
 #[database("auth_db")]
 pub struct AuthDb(sqlx::PgPool);
+
+pub fn query<DB>(sql: &str) -> Query<'_, DB, <DB as HasArguments<'_>>::Arguments>
+where
+    DB: rocket_db_pools::sqlx::Database,
+{
+    sqlx::query(sql)
+}
 
 impl Account {
     fn from_row(row: &<Postgres as rocket_db_pools::sqlx::Database>::Row) -> Account {
@@ -33,7 +40,7 @@ impl Account {
 }
 
 pub async fn find_or_create_by_email(mut db: Connection<AuthDb>, email: &str) -> Account {
-    match sqlx::query("SELECT * FROM auth WHERE email = $1")
+    match query("SELECT * FROM auth WHERE email = $1")
         .bind(email)
         .fetch_one(&mut **db)
         .await
@@ -48,7 +55,7 @@ pub async fn find_or_create_by_email(mut db: Connection<AuthDb>, email: &str) ->
 }
 
 pub async fn find_by_token(mut db: Connection<AuthDb>, token: &str) -> Option<Account> {
-    match sqlx::query("SELECT * FROM auth WHERE token = $1")
+    match query("SELECT * FROM auth WHERE token = $1")
         .bind(token)
         .fetch_one(&mut **db)
         .await
@@ -59,7 +66,7 @@ pub async fn find_by_token(mut db: Connection<AuthDb>, token: &str) -> Option<Ac
 }
 
 pub async fn insert(mut db: Connection<AuthDb>, account: &Account) {
-    sqlx::query("INSERT INTO auth values ($1, $2, $3)")
+    query("INSERT INTO auth values ($1, $2, $3)")
         .bind(account.id.as_str())
         .bind(account.email.as_str())
         .bind(account.token.as_str())
@@ -74,7 +81,7 @@ pub async fn top_pools(
     stop_block: &block::Number,
 ) -> Vec<Pool> {
     let sql = "select pool_contract_address, sum(in0) as sum_in0, sum(in0_eth) as sum_in0_eth, sum(in1) as sum_in1, sum(in1_eth) as sum_in1_eth, sum(in0_eth + in1_eth) as sum_eth, count(NULLIF(in0,0)) as count0, count(NULLIF(in1,0)) as count1 from swaps where block_number > $1 and block_number <= $2 group by pool_contract_address order by sum_eth desc limit 10";
-    match sqlx::query(sql)
+    match query(sql)
         .bind::<i32>(start_block.into())
         .bind::<i32>(stop_block.into())
         .fetch_all(&mut **db)
