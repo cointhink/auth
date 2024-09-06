@@ -12,9 +12,9 @@ use rocket::serde::json::Json;
 use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket::{Request, State};
 use rocket_db_pools::{Connection, Database};
-use sql::top_pools;
 
 mod models;
+mod qury;
 mod sql;
 
 #[macro_use]
@@ -45,8 +45,18 @@ impl<'r, 'o: 'r, R: Responder<'r, 'o>> Responder<'r, 'o> for Cors<R> {
 async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
     let latest_block = block::find_latest(&mut db).await.unwrap();
     Cors(Json(
-        top_pools(db, &latest_block.number.hours_ago(24), &latest_block.number).await,
+        sql::top_pools(db, &latest_block.number.hours_ago(24), &latest_block.number).await,
     ))
+}
+
+#[get("/pools/<pool_id>/since?<price>")]
+async fn pools_since(
+    mut db: Connection<sql::AuthDb>,
+    cookies: &CookieJar<'_>,
+    pool_id: &str,
+    price: u32,
+) -> Cors<Json<qury::PoolSinceResponse>> {
+    Cors(Json(qury::pool_since(db, pool_id, price).await))
 }
 
 #[get("/auth/<token>")]
@@ -92,7 +102,7 @@ fn rocket() -> _ {
         // }))
         .attach(sql::AuthDb::init())
         .attach(AdHoc::config::<AppConfig>())
-        .mount("/", routes![auth, register, pools_top])
+        .mount("/", routes![auth, register, pools_top, pools_since])
 }
 
 fn build_message<'b>(
