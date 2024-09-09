@@ -90,15 +90,15 @@ async fn register(
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        // .attach(AdHoc::on_liftoff("SQLX Migrate", |build| {
-        //     Box::pin(async move {
-        //         let db = sql::AuthDb::fetch(&build).unwrap();
-        //         let mut conn = db.acquire().await.unwrap();
-        //         // https://gist.github.com/hendi/3ff7f988a51125d757095d5fd2a8c216
-        //         //<&'c mut sqlx::pool::PoolConnection<DB> as sqlx::Acquire<'c>>
-        //         sqlx::migrate!("./sql").run(db);
-        //     })
-        // }))
+        .attach(AdHoc::on_liftoff("SQLX Migrate", |build| {
+            Box::pin(async move {
+                let db = sql::AuthDb::fetch(&build).unwrap();
+                match sqlx::migrate!("./sql").run(&**db).await {
+                    Ok(_) => (),
+                    Err(e) => error!("migration error: {}", e),
+                }
+            })
+        }))
         .attach(sql::AuthDb::init())
         .attach(AdHoc::config::<AppConfig>())
         .mount("/", routes![auth, register, pools_top, pools_since])
