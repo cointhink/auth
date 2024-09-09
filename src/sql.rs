@@ -8,7 +8,6 @@ use crate::models::{
     block, coin,
     pool::{self, Pool},
     reserve,
-    swap::Swap,
 };
 
 #[derive(Database)]

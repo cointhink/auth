@@ -54,17 +54,13 @@ pub async fn swap_price_since(
     match query(sql)
         .bind(pool_contract_address)
         .bind(limit as i32)
-        .fetch_all(db)
+        .fetch_optional(db)
         .await
     {
-        Ok(rows) => {
-            if rows.len() == 1 {
-                let row = rows.first().unwrap();
-                Some(Swap::from_row(row))
-            } else {
-                None
-            }
-        }
+        Ok(row_opt) => match row_opt {
+            Some(row) => Some(Swap::from_row(&row)),
+            None => None,
+        },
         Err(_e) => None,
     }
 }

@@ -51,12 +51,11 @@ async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
 
 #[get("/pools/<pool_id>/since?<price>")]
 async fn pools_since(
-    mut db: Connection<sql::AuthDb>,
-    cookies: &CookieJar<'_>,
+    db: Connection<sql::AuthDb>,
     pool_id: &str,
     price: u32,
 ) -> Cors<Json<qury::PoolSinceResponse>> {
-    Cors(Json(qury::pool_since(db, pool_id, price).await))
+    Cors(Json(qury::pool_price_since(db, pool_id, price).await))
 }
 
 #[get("/auth/<token>")]
@@ -162,7 +161,7 @@ mod test {
     fn register() {
         let email = "a@b.c";
         let client = Client::tracked(rocket()).expect("valid rocket instance");
-        let response = client.get(format!("/register/{}", email)).dispatch();
+        let response = client.post(format!("/register/{}", email)).dispatch();
         assert_eq!(response.status(), Status::Ok);
         let body = response.into_string().unwrap();
         assert_eq!(body, email.to_string());
@@ -174,6 +173,6 @@ mod test {
         let token = "non-existant-token";
         let response = client.get(format!("/auth/{}", token)).dispatch();
         assert_eq!(response.status(), Status::new(401));
-        assert_eq!(response.into_string().unwrap(), "bad token");
+        assert_eq!(response.into_string().unwrap(), "\"bad token\"");
     }
 }
