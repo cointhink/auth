@@ -1,9 +1,4 @@
-use std::collections::HashMap;
-
-use crate::models::account::Account;
 use crate::models::pool::Pool;
-use handlebars::Handlebars;
-use mail_send::{self, mail_builder::MessageBuilder, SmtpClientBuilder};
 use models::block;
 use rocket::http::{Cookie, CookieJar, Header, Status};
 use rocket::response::status;
@@ -13,6 +8,7 @@ use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket::{Request, State};
 use rocket_db_pools::{Connection, Database};
 
+mod email;
 mod models;
 mod qury;
 mod sql;
@@ -82,8 +78,8 @@ async fn register(
 ) -> Cors<Json<String>> {
     let acct = sql::find_or_create_by_email(db, email).await;
     let url = format!("{}{}", app_config.site, acct.token);
-    let email = build_message(&app_config.from_name, &app_config.from_email, &acct, &url);
-    send_email(&app_config.smtp, email).await;
+    let email = email::build_message(&app_config.from_name, &app_config.from_email, &acct, &url);
+    email::send_email(&app_config.smtp, email).await;
     Cors(Json(format!("{}", acct.email)))
 }
 
@@ -102,53 +98,6 @@ fn rocket() -> _ {
         .attach(sql::AuthDb::init())
         .attach(AdHoc::config::<AppConfig>())
         .mount("/", routes![auth, register, pools_top, pools_since])
-}
-
-fn build_message<'b>(
-    from_name: &'b str,
-    from_email: &'b str,
-    account: &'b Account,
-    url: &'b str,
-) -> MessageBuilder<'b> {
-    let mut handlebars = Handlebars::new();
-    handlebars.register_escape_fn(handlebars::no_escape);
-    handlebars
-        .register_template_file("register_body", "emails/register_body.hbs")
-        .unwrap();
-    let mut data = HashMap::new();
-    data.insert("url", url);
-    let body = handlebars.render("register_body", &data).unwrap();
-
-    handlebars
-        .register_template_file("register_subject", "emails/register_subject.hbs")
-        .unwrap();
-    let data: HashMap<&str, &str> = HashMap::new();
-    let subject = handlebars
-        .render("register_subject", &data)
-        .unwrap()
-        .lines()
-        .next() // first line only
-        .unwrap()
-        .to_string();
-
-    MessageBuilder::new()
-        .from((from_name, from_email))
-        .to(account.email.as_str())
-        .subject(subject)
-        .text_body(body)
-}
-
-async fn send_email<'b>(smtp_host: &str, email: MessageBuilder<'b>) {
-    println!("smtp {} to {:?}", smtp_host, email);
-    SmtpClientBuilder::new(smtp_host, 25)
-        .allow_invalid_certs()
-        .implicit_tls(false)
-        .connect()
-        .await
-        .unwrap()
-        .send(email)
-        .await
-        .unwrap();
 }
 
 #[cfg(test)]
