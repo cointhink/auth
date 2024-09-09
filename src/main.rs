@@ -105,6 +105,7 @@ mod test {
     use super::rocket;
     use rocket::http::Status;
     use rocket::local::blocking::Client;
+    use rocket::serde::json;
 
     #[test]
     fn register() {
@@ -112,8 +113,8 @@ mod test {
         let client = Client::tracked(rocket()).expect("valid rocket instance");
         let response = client.post(format!("/register/{}", email)).dispatch();
         assert_eq!(response.status(), Status::Ok);
-        let body = response.into_string().unwrap();
-        assert_eq!(body, email.to_string());
+        let body_json = json::from_str::<String>(&response.into_string().unwrap()).unwrap();
+        assert_eq!(body_json, email);
     }
 
     #[test]
