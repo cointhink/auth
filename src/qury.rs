@@ -9,8 +9,9 @@ use time::macros::format_description;
 
 #[derive(Serialize)]
 pub struct PoolSinceResponse {
-    pool_contract_address: String,
     block_time: String,
+    price: f64,
+    swap: models::swap::Swap,
 }
 
 pub async fn pool_price_since(
@@ -28,17 +29,19 @@ pub async fn pool_price_since(
     // let block_time = time::Time::parse(
     //     &block_timestamp_str,
     //     format_description!("[unix_timestamp precision:second]"),
-    // )
+    // ) // error TryFromParsed(InsufficientInformation)
     // .unwrap();
     let elapsed = Duration::from_secs(block.timestamp as u64);
     let utime = time::OffsetDateTime::UNIX_EPOCH;
     let block_time = utime.add(elapsed);
-
     return PoolSinceResponse {
-        pool_contract_address: pool_contract_address.to_owned(),
         block_time: block_time
             .format(format_description!("[hour]:[minute]:[second]"))
             .unwrap(),
+        price: swap
+            .pricef_eth_buy()
+            .unwrap_or(swap.pricef_eth_sell().unwrap()),
+        swap,
     };
 }
 

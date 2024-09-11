@@ -1,3 +1,4 @@
+use num_traits::ToPrimitive;
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
@@ -43,6 +44,24 @@ impl Swap {
             out1: row.get("out1"),
         }
     }
+
+    pub fn pricef_eth_buy(&self) -> Option<f64> {
+        div(self.in0_eth.clone(), self.out1.clone())
+    }
+
+    pub fn pricef_eth_sell(&self) -> Option<f64> {
+        div(self.in1_eth.clone(), self.out0.clone())
+    }
+}
+
+fn div(ine: Option<BigDecimal>, out: Option<BigDecimal>) -> Option<f64> {
+    match out {
+        Some(out_some) => {
+            let flt = ine.unwrap().to_f64().unwrap() / out_some.to_f64().unwrap();
+            Some(flt)
+        }
+        None => None,
+    }
 }
 
 pub async fn swap_price_since(
@@ -50,8 +69,8 @@ pub async fn swap_price_since(
     pool_contract_address: &str,
     limit: u32,
 ) -> Option<Swap> {
-    let sql = "select * from swaps where pool_contract_address = $1 and in0 / in0_eth < $2 limit 1";
-    match query(sql)
+    let sql_buy = "select *, in0_eth / out1 as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / out1 < $2 limit 1";
+    match query(sql_buy)
         .bind(pool_contract_address)
         .bind(limit as i32)
         .fetch_optional(db)
