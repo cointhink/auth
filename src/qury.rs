@@ -19,7 +19,8 @@ pub struct PoolSinceResponse {
 pub async fn pool_price_since(
     mut db: Connection<sql::AuthDb>,
     pool_contract_address: &str,
-    limit: f64,
+    price0: f64,
+    price1: f64,
 ) -> PoolSinceResponse {
     let pool = models::pool::find_by_address(&mut **db, pool_contract_address)
         .await
@@ -30,10 +31,16 @@ pub async fn pool_price_since(
     let token1 = models::coin::find_by_address(&mut **db, &pool.token1)
         .await
         .unwrap();
-    let swap =
-        models::swap::swap_price_since(&mut **db, pool_contract_address, limit, token1.decimals)
-            .await
-            .unwrap();
+    let swap = models::swap::swap_price_since(
+        &mut **db,
+        pool_contract_address,
+        price0,
+        price1,
+        token0.decimals,
+        token1.decimals,
+    )
+    .await
+    .unwrap();
     let block = models::block::find_by_number(&mut **db, swap.block_number)
         .await
         .unwrap();

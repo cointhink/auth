@@ -45,13 +45,16 @@ async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
     ))
 }
 
-#[get("/pools/<pool_id>/since?<price>")]
+#[get("/pools/<pool_id>/since?<price0>&<price1>")]
 async fn pools_since(
     db: Connection<sql::AuthDb>,
     pool_id: &str,
-    price: f64,
+    price0: Option<f64>,
+    price1: Option<f64>,
 ) -> Cors<Json<qury::PoolSinceResponse>> {
-    Cors(Json(qury::pool_price_since(db, pool_id, price).await))
+    Cors(Json(
+        qury::pool_price_since(db, pool_id, price0.unwrap_or(0.0), price1.unwrap_or(0.0)).await,
+    ))
 }
 
 #[get("/auth/<token>")]

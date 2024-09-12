@@ -67,14 +67,16 @@ fn div(ine: Option<BigDecimal>, out: Option<BigDecimal>) -> Option<f64> {
 pub async fn swap_price_since(
     db: &mut PgConnection,
     pool_contract_address: &str,
-    limit: f64,
+    price0: f64,
+    price1: f64,
+    out0_decimals: i32,
     out1_decimals: i32,
 ) -> Option<Swap> {
     let sql_buy = "select *, in0_eth / out1 * power(10,$2) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / out1 * power(10, $2) < $3 limit 1";
     match query(sql_buy)
         .bind(pool_contract_address)
         .bind(18 - out1_decimals)
-        .bind(limit)
+        .bind(price0)
         .fetch_optional(db)
         .await
     {
