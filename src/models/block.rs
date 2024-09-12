@@ -53,16 +53,16 @@ pub async fn find_by_number(db: &mut PgConnection, number: u32) -> Option<Block>
     }
 }
 
-pub async fn find_by_timestamp(db: &mut PgConnection, timestamp: u32) -> Option<Block> {
-    match query("SELECT * FROM blocks WHERE timestamp >= $1 order by timestamp asc limit 1")
-        .bind(timestamp as i32)
-        .fetch_one(db)
-        .await
-    {
-        Ok(row) => Some(Block::from_row(&row)),
-        Err(_e) => None,
-    }
-}
+// pub async fn find_by_timestamp(db: &mut PgConnection, timestamp: u32) -> Option<Block> {
+//     match query("SELECT * FROM blocks WHERE timestamp >= $1 order by timestamp asc limit 1")
+//         .bind(timestamp as i32)
+//         .fetch_one(db)
+//         .await
+//     {
+//         Ok(row) => Some(Block::from_row(&row)),
+//         Err(_e) => None,
+//     }
+// }
 
 pub async fn find_latest(db: &mut PgConnection) -> Option<Block> {
     match query("SELECT * FROM blocks order by number desc limit 1")

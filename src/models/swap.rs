@@ -1,4 +1,3 @@
-use num_traits::ToPrimitive;
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
@@ -44,24 +43,6 @@ impl Swap {
             out1: row.get("out1"),
         }
     }
-
-    pub fn pricef_eth_buy(&self) -> Option<f64> {
-        div(self.in0_eth.clone(), self.out1.clone())
-    }
-
-    pub fn pricef_eth_sell(&self) -> Option<f64> {
-        div(self.in1_eth.clone(), self.out0.clone())
-    }
-}
-
-fn div(ine: Option<BigDecimal>, out: Option<BigDecimal>) -> Option<f64> {
-    match out {
-        Some(out_some) => {
-            let flt = ine.unwrap().to_f64().unwrap() / out_some.to_f64().unwrap();
-            Some(flt)
-        }
-        None => None,
-    }
 }
 
 pub async fn swap_price_since(
@@ -71,12 +52,11 @@ pub async fn swap_price_since(
     price: f64,
     decimals: i32,
 ) -> Option<(f64, Swap)> {
-    let sql = if direction {
-        "select *, in0_eth / (out1 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / (out1 * power(10, $2)) < $3 order by block_number desc limit 1"
-    } else {
-        "select *, in1_eth / (out0 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out0 > 0 and in1_eth / (out0 * power(10, $2)) < $3 order by block_number desc limit 1"
-    };
-    match query(sql)
+    let out_coin = if direction { "out1" } else { "out0" };
+    let in_coin = if direction { "in0_eth" } else { "in1+eth" };
+    let price_sql = format!("{} / ({} * power(10,$2))", in_coin, out_coin);
+    let sql = format!("select *, {} as price_eth from swaps where pool_contract_address = $1 and {} > 0 and {} < $3 order by block_number desc limit 1", price_sql, out_coin, price_sql);
+    match query(&sql)
         .bind(pool_contract_address)
         .bind(decimals)
         .bind(price)
