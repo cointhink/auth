@@ -67,34 +67,19 @@ fn div(ine: Option<BigDecimal>, out: Option<BigDecimal>) -> Option<f64> {
 pub async fn swap_price_since(
     db: &mut PgConnection,
     pool_contract_address: &str,
-    price0: Option<f64>,
-    price1: Option<f64>,
-    out0_decimals: i32,
-    out1_decimals: i32,
+    direction: bool,
+    price: f64,
+    decimals: i32,
 ) -> Option<Swap> {
-    if price0.is_none() && price1.is_none() {
-        return None;
-    }
-    if price0.is_some() && price1.is_some() {
-        return None;
-    }
-
     let mut sql: &str = "";
-    let mut decimal_difference = 0;
-    let mut price: f64 = 0.0;
-    if price0.is_some() && price1.is_none() {
+    if direction {
         sql = "select *, in0_eth / (out1 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / (out1 * power(10, $2)) < $3 order by block_number desc limit 1";
-        decimal_difference = 18 - out1_decimals;
-        price = price0.unwrap();
-    }
-    if price0.is_none() && price1.is_some() {
+    } else {
         sql = "select *, in1_eth / (out0 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out0 > 0 and in1_eth / (out0 * power(10, $2)) < $3 order by block_number desc limit 1";
-        decimal_difference = 18 - out0_decimals;
-        price = price1.unwrap();
-    }
+    };
     match query(sql)
         .bind(pool_contract_address)
-        .bind(decimal_difference)
+        .bind(decimals)
         .bind(price)
         .fetch_optional(db)
         .await

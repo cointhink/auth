@@ -22,6 +22,13 @@ pub async fn pool_price_since(
     price0: Option<f64>,
     price1: Option<f64>,
 ) -> Result<PoolSinceResponse, String> {
+    if price0.is_none() && price1.is_none() {
+        return Err("bad params both empty".to_owned());
+    }
+    if price0.is_some() && price1.is_some() {
+        return Err("bad params both full".to_owned());
+    }
+
     let pool = models::pool::find_by_address(&mut **db, pool_contract_address)
         .await
         .unwrap();
@@ -31,13 +38,27 @@ pub async fn pool_price_since(
     let token1 = models::coin::find_by_address(&mut **db, &pool.token1)
         .await
         .unwrap();
+
+    let mut price: f64 = 0.0;
+    let mut decimal_difference = 0;
+    let mut direction = true;
+    if price0.is_some() && price1.is_none() {
+        decimal_difference = token0.decimals - token1.decimals;
+        price = price0.unwrap();
+        direction = true;
+    }
+    if price0.is_none() && price1.is_some() {
+        decimal_difference = token1.decimals - token0.decimals;
+        price = price1.unwrap();
+        direction = false;
+    }
+
     let swap_opt = models::swap::swap_price_since(
         &mut **db,
         pool_contract_address,
-        price0,
-        price1,
-        token0.decimals,
-        token1.decimals,
+        direction,
+        price,
+        decimal_difference,
     )
     .await;
     if let Some(swap) = swap_opt {
