@@ -11,6 +11,8 @@ use time::macros::format_description;
 pub struct PoolSinceResponse {
     block_time: String,
     price: f64,
+    token0: models::coin::Coin,
+    token1: models::coin::Coin,
     swap: models::swap::Swap,
 }
 
@@ -19,9 +21,19 @@ pub async fn pool_price_since(
     pool_contract_address: &str,
     limit: f64,
 ) -> PoolSinceResponse {
-    let swap = models::swap::swap_price_since(&mut **db, pool_contract_address, limit)
+    let pool = models::pool::find_by_address(&mut **db, pool_contract_address)
         .await
         .unwrap();
+    let token0 = models::coin::find_by_address(&mut **db, &pool.token0)
+        .await
+        .unwrap();
+    let token1 = models::coin::find_by_address(&mut **db, &pool.token1)
+        .await
+        .unwrap();
+    let swap =
+        models::swap::swap_price_since(&mut **db, pool_contract_address, limit, token1.decimals)
+            .await
+            .unwrap();
     let block = models::block::find_by_number(&mut **db, swap.block_number)
         .await
         .unwrap();
@@ -36,12 +48,16 @@ pub async fn pool_price_since(
     let block_time = utime.add(elapsed);
     return PoolSinceResponse {
         block_time: block_time
-            .format(format_description!("[hour]:[minute]:[second]"))
+            .format(format_description!(
+                "[year]-[month]-[day] [hour]:[minute]:[second]"
+            ))
             .unwrap(),
         price: swap
             .pricef_eth_buy()
             .unwrap_or(swap.pricef_eth_sell().unwrap()),
         swap,
+        token0,
+        token1,
     };
 }
 
