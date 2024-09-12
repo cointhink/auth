@@ -68,10 +68,12 @@ pub async fn swap_price_since(
     db: &mut PgConnection,
     pool_contract_address: &str,
     limit: f64,
+    out1_decimals: i32,
 ) -> Option<Swap> {
-    let sql_buy = "select *, in0_eth / out1 as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / out1 < $2 limit 1";
+    let sql_buy = "select *, in0_eth / out1 * power(10,$2) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / out1 * power(10, $2) < $3 limit 1";
     match query(sql_buy)
         .bind(pool_contract_address)
+        .bind(18 - out1_decimals)
         .bind(limit)
         .fetch_optional(db)
         .await
