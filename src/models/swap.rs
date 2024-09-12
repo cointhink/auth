@@ -83,12 +83,12 @@ pub async fn swap_price_since(
     let mut decimal_difference = 0;
     let mut price: f64 = 0.0;
     if price0.is_some() && price1.is_none() {
-        sql = "select *, in0_eth / (out1 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / (out1 * power(10, $2)) < $3 limit 1";
+        sql = "select *, in0_eth / (out1 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / (out1 * power(10, $2)) < $3 order by block_number desc limit 1";
         decimal_difference = 18 - out1_decimals;
         price = price0.unwrap();
     }
     if price0.is_none() && price1.is_some() {
-        sql = "select *, in1_eth / (out0 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out0 > 0 and in1_eth / (out1 * power(10, $2)) < $3 limit 1";
+        sql = "select *, in1_eth / (out0 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out0 > 0 and in1_eth / (out1 * power(10, $2)) < $3 order by block_number desc limit 1";
         decimal_difference = 18 - out0_decimals;
         price = price1.unwrap();
     }
