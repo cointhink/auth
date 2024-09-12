@@ -49,7 +49,7 @@ async fn pools_top(mut db: Connection<sql::AuthDb>) -> Cors<Json<Vec<Pool>>> {
 async fn pools_since(
     db: Connection<sql::AuthDb>,
     pool_id: &str,
-    price: u32,
+    price: f64,
 ) -> Cors<Json<qury::PoolSinceResponse>> {
     Cors(Json(qury::pool_price_since(db, pool_id, price).await))
 }

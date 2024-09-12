@@ -17,7 +17,7 @@ pub struct PoolSinceResponse {
 pub async fn pool_price_since(
     mut db: Connection<sql::AuthDb>,
     pool_contract_address: &str,
-    limit: u32,
+    limit: f64,
 ) -> PoolSinceResponse {
     let swap = models::swap::swap_price_since(&mut **db, pool_contract_address, limit)
         .await
