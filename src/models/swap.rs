@@ -70,12 +70,11 @@ pub async fn swap_price_since(
     direction: bool,
     price: f64,
     decimals: i32,
-) -> Option<Swap> {
-    let mut sql: &str = "";
-    if direction {
-        sql = "select *, in0_eth / (out1 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / (out1 * power(10, $2)) < $3 order by block_number desc limit 1";
+) -> Option<(f64, Swap)> {
+    let sql = if direction {
+        "select *, in0_eth / (out1 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out1 > 0 and in0_eth / (out1 * power(10, $2)) < $3 order by block_number desc limit 1"
     } else {
-        sql = "select *, in1_eth / (out0 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out0 > 0 and in1_eth / (out0 * power(10, $2)) < $3 order by block_number desc limit 1";
+        "select *, in1_eth / (out0 * power(10,$2)) as price_eth from swaps where pool_contract_address = $1 and out0 > 0 and in1_eth / (out0 * power(10, $2)) < $3 order by block_number desc limit 1"
     };
     match query(sql)
         .bind(pool_contract_address)
@@ -85,7 +84,7 @@ pub async fn swap_price_since(
         .await
     {
         Ok(row_opt) => match row_opt {
-            Some(row) => Some(Swap::from_row(&row)),
+            Some(row) => Some((row.get::<f64, &str>("price_eth"), Swap::from_row(&row))),
             None => None,
         },
         Err(_e) => None,

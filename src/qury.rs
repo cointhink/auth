@@ -62,7 +62,7 @@ pub async fn pool_price_since(
     )
     .await;
     if let Some(swap) = swap_opt {
-        let block = models::block::find_by_number(&mut **db, swap.block_number)
+        let block = models::block::find_by_number(&mut **db, swap.1.block_number)
             .await
             .unwrap();
         // let block_timestamp_str = block.timestamp.to_string();
@@ -80,10 +80,8 @@ pub async fn pool_price_since(
                     "[year]-[month]-[day] [hour]:[minute]:[second]"
                 ))
                 .unwrap(),
-            price: swap
-                .pricef_eth_buy()
-                .unwrap_or(swap.pricef_eth_sell().unwrap()),
-            swap,
+            price: swap.0,
+            swap: swap.1,
             token0,
             token1,
         });
