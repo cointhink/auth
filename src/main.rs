@@ -51,10 +51,11 @@ async fn pools_since(
     pool_id: &str,
     price0: Option<f64>,
     price1: Option<f64>,
-) -> Cors<Json<qury::PoolSinceResponse>> {
-    Cors(Json(
-        qury::pool_price_since(db, pool_id, price0.unwrap_or(0.0), price1.unwrap_or(0.0)).await,
-    ))
+) -> Result<Cors<Json<qury::PoolSinceResponse>>, Json<String>> {
+    match qury::pool_price_since(db, pool_id, price0, price1).await {
+        Ok(zo) => Ok(Cors(Json(zo))),
+        Err(e) => Err(Json(e)),
+    }
 }
 
 #[get("/auth/<token>")]
