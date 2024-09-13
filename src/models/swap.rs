@@ -46,6 +46,7 @@ impl Swap {
     }
 
     pub(crate) fn price(&self, direction: bool) -> f64 {
+        info!("direction: {} {:?}", direction, self);
         let (numerator, denominator) = if direction {
             if self.in0.is_some() {
                 (self.in0.clone().unwrap(), self.out1.clone().unwrap())
