@@ -51,7 +51,7 @@ pub async fn swap_price_since(
     direction: bool,
     price: f64,
     decimals: i32,
-) -> Option<(f64, Swap)> {
+) -> Result<(f64, Swap), String> {
     let out_coin = if direction { "out1" } else { "out0" };
     let in_coin = if direction { "in0_eth" } else { "in1+eth" };
     let price_sql = format!("{} / ({} * power(10,$2))", in_coin, out_coin);
@@ -64,9 +64,12 @@ pub async fn swap_price_since(
         .await
     {
         Ok(row_opt) => match row_opt {
-            Some(row) => Some((row.get::<f64, &str>("price_eth"), Swap::from_row(&row))),
-            None => None,
+            Some(row) => Ok((row.get::<f64, &str>("price_eth"), Swap::from_row(&row))),
+            None => Err(format!(
+                "0 rows: {} {} {} {}",
+                sql, pool_contract_address, decimals, price
+            )),
         },
-        Err(_e) => None,
+        Err(e) => Err(format!("{}", e)),
     }
 }

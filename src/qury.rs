@@ -66,35 +66,38 @@ pub async fn pool_price_since(
         decimal_difference,
     )
     .await;
-    if let Some((swap_price_eth, swap)) = swap_opt {
-        let block = models::block::find_by_number(&mut **db, swap.block_number)
-            .await
-            .unwrap();
-        // let block_timestamp_str = block.timestamp.to_string();
-        // let block_time = time::Time::parse(
-        //     &block_timestamp_str,
-        //     format_description!("[unix_timestamp precision:second]"),
-        // ) // error TryFromParsed(InsufficientInformation)
-        // .unwrap();
-        let elapsed = Duration::from_secs(block.timestamp as u64);
-        let utime = time::OffsetDateTime::UNIX_EPOCH;
-        let block_time = utime.add(elapsed);
-        const USDC_POOL: &str = "b4e16d0168e52d35cacd2c6185b44281ec28c9dc";
-        let price_usd = pool_price_at(&mut **db, USDC_POOL, true, swap.block_number).await;
-        return Ok(PoolSinceResponse {
-            block_time: block_time
-                .format(format_description!(
-                    "[year]-[month]-[day] [hour]:[minute]:[second]"
-                ))
-                .unwrap(),
-            price: swap_price_eth,
-            cash: price_usd.unwrap_or(BigDecimal::from(-1)).to_f64().unwrap(),
-            swap,
-            token0,
-            token1,
-        });
-    } else {
-        return Err("none".to_owned());
+    match swap_opt {
+        Ok((swap_price_eth, swap)) => {
+            let block = models::block::find_by_number(&mut **db, swap.block_number)
+                .await
+                .unwrap();
+            // let block_timestamp_str = block.timestamp.to_string();
+            // let block_time = time::Time::parse(
+            //     &block_timestamp_str,
+            //     format_description!("[unix_timestamp precision:second]"),
+            // ) // error TryFromParsed(InsufficientInformation)
+            // .unwrap();
+            let elapsed = Duration::from_secs(block.timestamp as u64);
+            let utime = time::OffsetDateTime::UNIX_EPOCH;
+            let block_time = utime.add(elapsed);
+            const USDC_POOL: &str = "b4e16d0168e52d35cacd2c6185b44281ec28c9dc";
+            let price_usd = pool_price_at(&mut **db, USDC_POOL, true, swap.block_number).await;
+            return Ok(PoolSinceResponse {
+                block_time: block_time
+                    .format(format_description!(
+                        "[year]-[month]-[day] [hour]:[minute]:[second]"
+                    ))
+                    .unwrap(),
+                price: swap_price_eth,
+                cash: price_usd.unwrap_or(BigDecimal::from(-1)).to_f64().unwrap(),
+                swap,
+                token0,
+                token1,
+            });
+        }
+        Err(msg) => {
+            return Err(msg);
+        }
     }
 }
 
