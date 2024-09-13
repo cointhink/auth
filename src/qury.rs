@@ -120,13 +120,13 @@ pub async fn pool_price_at(
                 if swap.in0.is_some() {
                     (swap.in0.unwrap(), swap.out1.unwrap())
                 } else {
-                    (swap.out1.unwrap(), swap.in0.unwrap())
+                    (swap.out0.unwrap(), swap.in1.unwrap())
                 }
             } else {
                 if swap.in1.is_some() {
                     (swap.in1.unwrap(), swap.out0.unwrap())
                 } else {
-                    (swap.out0.unwrap(), swap.in1.unwrap())
+                    (swap.out1.unwrap(), swap.in0.unwrap())
                 }
             };
             Some(numerator / denominator)
