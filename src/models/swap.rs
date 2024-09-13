@@ -53,7 +53,7 @@ pub async fn swap_price_since(
     decimals: i32,
 ) -> Result<(f64, Swap), String> {
     let out_coin = if direction { "out1" } else { "out0" };
-    let in_coin = if direction { "in0_eth" } else { "in1+eth" };
+    let in_coin = if direction { "in0_eth" } else { "in1_eth" };
     let price_sql = format!("{} / ({} * power(10,$2))", in_coin, out_coin);
     let sql = format!("select *, {} as price_eth from swaps where pool_contract_address = $1 and {} > 0 and {} < $3 order by block_number desc limit 1", price_sql, out_coin, price_sql);
     match query(&sql)
