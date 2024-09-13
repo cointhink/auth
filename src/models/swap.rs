@@ -60,6 +60,7 @@ impl Swap {
                 (self.in1.clone().unwrap(), self.out0.clone().unwrap())
             }
         };
+        info!("numerator {} / denomiator {}", numerator, denominator);
         (numerator / denominator).to_f64().unwrap()
     }
 }
