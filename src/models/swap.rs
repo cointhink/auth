@@ -1,3 +1,4 @@
+use num_traits::cast::ToPrimitive;
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{self, PgConnection, Postgres, Row};
 use sqlx::types::BigDecimal;
@@ -43,6 +44,23 @@ impl Swap {
             out1: row.get("out1"),
         }
     }
+
+    pub(crate) fn price(&self, direction: bool) -> f64 {
+        let (numerator, denominator) = if direction {
+            if self.in0.is_some() {
+                (self.in0.clone().unwrap(), self.out1.clone().unwrap())
+            } else {
+                (self.out0.clone().unwrap(), self.in1.clone().unwrap())
+            }
+        } else {
+            if self.in0.is_some() {
+                (self.out1.clone().unwrap(), self.in0.clone().unwrap())
+            } else {
+                (self.in1.clone().unwrap(), self.out0.clone().unwrap())
+            }
+        };
+        (numerator / denominator).to_f64().unwrap()
+    }
 }
 
 pub async fn swap_price_since(
@@ -71,5 +89,45 @@ pub async fn swap_price_since(
             )),
         },
         Err(e) => Err(format!("{}", e)),
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Swap;
+    use sqlx::types::BigDecimal;
+
+    #[test]
+    fn price_from_buy() {
+        let swap_buy = Swap {
+            pool_contract_address: "test-contract-usdc-weth".to_owned(),
+            block_number: 1,
+            transaction_index: 0,
+            in0: Some(BigDecimal::from(4000)),
+            in0_eth: Some(BigDecimal::from(1)),
+            in1: None,
+            in1_eth: None,
+            out0: None,
+            out1: Some(BigDecimal::from(1)),
+        };
+        assert_eq!(swap_buy.price(true), 4000.0);
+        assert_eq!(swap_buy.price(false), 0.00025);
+    }
+
+    #[test]
+    fn price_from_sell() {
+        let swap_sell = Swap {
+            pool_contract_address: "test-contract-usdc-weth".to_owned(),
+            block_number: 1,
+            transaction_index: 0,
+            in0: None,
+            in0_eth: None,
+            in1: Some(BigDecimal::from(1)),
+            in1_eth: Some(BigDecimal::from(1)),
+            out0: Some(BigDecimal::from(4000)),
+            out1: None,
+        };
+        assert_eq!(swap_sell.price(true), 4000.0);
+        assert_eq!(swap_sell.price(false), 0.00025);
     }
 }

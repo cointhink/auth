@@ -1,6 +1,4 @@
 use crate::sql::query;
-use num_traits::cast::ToPrimitive;
-use sqlx::types::BigDecimal;
 use std::ops::Add;
 use std::time::Duration;
 
@@ -89,7 +87,7 @@ pub async fn pool_price_since(
                     ))
                     .unwrap(),
                 price: swap_price_eth,
-                cash: price_usd.unwrap_or(BigDecimal::from(-1)).to_f64().unwrap(),
+                cash: price_usd.unwrap_or(-1.0),
                 swap,
                 token0,
                 token1,
@@ -106,8 +104,8 @@ pub async fn pool_price_at(
     pool_contract_address: &str,
     direction: bool,
     block_number: u32,
-) -> Option<BigDecimal> {
-    let sql = "select * from swaps where pool_contract_address = $1 and block_number = $2";
+) -> Result<f64, String> {
+    let sql = "select * from swaps where pool_contract_address = $1 and block_number = $2 limit 1";
     match query(&sql)
         .bind(pool_contract_address)
         .bind(block_number as i32)
@@ -116,23 +114,10 @@ pub async fn pool_price_at(
     {
         Ok(row) => {
             let swap = models::swap::Swap::from_row(&row);
-            let (numerator, denominator) = if direction {
-                if swap.in0.is_some() {
-                    (swap.in0.unwrap(), swap.out1.unwrap())
-                } else {
-                    (swap.out0.unwrap(), swap.in1.unwrap())
-                }
-            } else {
-                if swap.in1.is_some() {
-                    (swap.in1.unwrap(), swap.out0.unwrap())
-                } else {
-                    (swap.out1.unwrap(), swap.in0.unwrap())
-                }
-            };
-            Some(numerator / denominator)
+            Ok(swap.price(direction))
         }
 
-        Err(_) => None,
+        Err(e) => Err(e.to_string()),
     }
 }
 
