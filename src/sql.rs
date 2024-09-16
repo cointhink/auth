@@ -1,3 +1,4 @@
+use rocket::fairing::AdHoc;
 use rocket_db_pools::{
     sqlx::{self, database::HasArguments, query::Query, Postgres, Row},
     Connection, Database,
@@ -13,6 +14,26 @@ use crate::models::{
 #[derive(Database)]
 #[database("auth_db")]
 pub struct AuthDb(sqlx::PgPool);
+
+// // on_ignite can still modify the rocket instance, so it returns build
+// pub fn migrate() -> AdHoc {
+//     AdHoc::on_ignite("SQLx query log", |build| async {
+//         let db = AuthDb::fetch(&build).unwrap();
+//         build
+//     })
+// }
+
+pub fn migrate() -> AdHoc {
+    AdHoc::on_liftoff("SQLx Migrate", |build| {
+        Box::pin(async move {
+            let db = AuthDb::fetch(&build).unwrap();
+            match sqlx::migrate!("./sql").run(&**db).await {
+                Ok(_) => (),
+                Err(e) => error!("migration error: {}", e),
+            }
+        })
+    })
+}
 
 pub fn query<DB>(sql: &str) -> Query<'_, DB, <DB as HasArguments<'_>>::Arguments>
 where

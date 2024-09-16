@@ -1,5 +1,4 @@
-use rocket::fairing::AdHoc;
-use rocket::serde::Deserialize;
+use rocket::{fairing::AdHoc, serde::Deserialize};
 use rocket_db_pools::Database;
 
 mod email;
@@ -23,16 +22,8 @@ pub struct AppConfig {
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .attach(AdHoc::on_liftoff("SQLX Migrate", |build| {
-            Box::pin(async move {
-                let db = sql::AuthDb::fetch(&build).unwrap();
-                match sqlx::migrate!("./sql").run(&**db).await {
-                    Ok(_) => (),
-                    Err(e) => error!("migration error: {}", e),
-                }
-            })
-        }))
         .attach(sql::AuthDb::init())
+        .attach(sql::migrate())
         .attach(AdHoc::config::<AppConfig>())
         .mount(
             "/",

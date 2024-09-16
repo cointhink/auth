@@ -10,6 +10,7 @@ bs58 = "0.5.1"
 ethereum-types = "0.14.1"
 figment = { version = "0.10.19", features = ["serde_json"] }
 handlebars = "6.1.0"
+log = "0.4.21"
 mail-send = "0.4.9"
 num-traits = "0.2.19"
 postgres = "0.19.8"
@@ -17,6 +18,10 @@ rand = "0.8.5"
 rocket = { version = "=0.5.1", features = ["serde_json", "json"] }
 rocket_db_pools = { version = "0.2.0", features = ["sqlx_postgres"] }
 serde = "1.0.210"
-sqlx = { version = "0.7.4", default-features = false, features = ["macros", "migrate", "bigdecimal"] }
+sqlx = { version = "0.7.4", default-features = false, features = [
+    "macros",
+    "migrate",
+    "bigdecimal",
+] }
 toml = "0.8.19"
 time = "0.3.36"
