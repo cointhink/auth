@@ -45,6 +45,17 @@ impl Swap {
         }
     }
 
+    /*
+        direction: true
+        Swap { pool_contract_address: "b4e16d0168e52d35cacd2c6185b44281ec28c9dc", block_number: 20739255, transaction_index: 138,
+        in0_eth: Some(BigDecimal("0")),
+        in1_eth: Some(BigDecimal("107878427269709736")),
+        in0: Some(BigDecimal("0")),
+        in1: Some(BigDecimal("107878427269709736")),
+        out0: Some(BigDecimal("253278071")),
+        out1: Some(BigDecimal("0")) }
+        numerator 0 / denomiator 0
+    */
     pub(crate) fn price(&self, direction: bool) -> f64 {
         info!("direction: {} {:?}", direction, self);
         let (numerator, denominator) = if direction {
