@@ -6,6 +6,7 @@ mod models;
 mod qury;
 mod route;
 mod sql;
+mod timer;
 
 #[macro_use]
 extern crate rocket;
@@ -25,6 +26,7 @@ fn rocket() -> _ {
         .attach(sql::AuthDb::init())
         .attach(sql::migrate())
         .attach(AdHoc::config::<AppConfig>())
+        .attach(timer::Timer::new())
         .mount(
             "/",
             routes![

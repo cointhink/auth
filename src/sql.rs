@@ -23,6 +23,14 @@ pub struct AuthDb(sqlx::PgPool);
 //     })
 // }
 
+// Log Statements https://docs.rs/rocket_db_pools/latest/src/rocket_db_pools/pool.rs.html#304
+// if let Ok(level) = figment.extract_inner::<LogLevel>(rocket::Config::LOG_LEVEL) {
+//     if !matches!(level, LogLevel::Normal | LogLevel::Off) {
+//         opts = opts.log_statements(level.into())
+//             .log_slow_statements(level.into(), Duration::default());
+//     }
+// }
+
 pub fn migrate() -> AdHoc {
     AdHoc::on_liftoff("SQLx Migrate", |build| {
         Box::pin(async move {
