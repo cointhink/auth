@@ -1,9 +1,6 @@
-use crate::sql::query;
-use std::ops::Add;
-use std::time::Duration;
-
 use crate::models;
 use crate::sql;
+use crate::sql::query;
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::PgConnection;
 use rocket_db_pools::Connection;
@@ -69,15 +66,7 @@ pub async fn pool_price_since(
             let block = models::block::find_by_number(&mut **db, swap.block_number)
                 .await
                 .unwrap();
-            // let block_timestamp_str = block.timestamp.to_string();
-            // let block_time = time::Time::parse(
-            //     &block_timestamp_str,
-            //     format_description!("[unix_timestamp precision:second]"),
-            // ) // error TryFromParsed(InsufficientInformation)
-            // .unwrap();
-            let elapsed = Duration::from_secs(block.timestamp as u64);
-            let utime = time::OffsetDateTime::UNIX_EPOCH;
-            let block_time = utime.add(elapsed);
+            let block_time: time::OffsetDateTime = block.timestamp.into();
             const USDC_POOL: &str = "b4e16d0168e52d35cacd2c6185b44281ec28c9dc";
             let price_usd = pool_price_at(&mut **db, USDC_POOL, true, swap.block_number).await;
             return Ok(PoolSinceResponse {

@@ -1,5 +1,7 @@
 use rocket::serde::Serialize;
 use rocket_db_pools::sqlx::{PgConnection, Postgres, Row};
+use std::ops::Add;
+use std::time::Duration;
 
 use crate::sql::query;
 
@@ -25,11 +27,22 @@ impl From<&Number> for i32 {
     }
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct Timestamp(u32);
+
+impl From<Timestamp> for time::OffsetDateTime {
+    fn from(value: Timestamp) -> Self {
+        let elapsed = Duration::from_secs(value.0 as u64);
+        let utime = time::OffsetDateTime::UNIX_EPOCH;
+        utime.add(elapsed)
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct Block {
     pub hash: String,
     pub number: Number,
-    pub timestamp: u32,
+    pub timestamp: Timestamp,
 }
 
 impl Block {
@@ -37,7 +50,7 @@ impl Block {
         Block {
             hash: row.get::<String, &str>("hash"),
             number: row.get::<i32, &str>("number").into(),
-            timestamp: row.get::<i32, &str>("timestamp") as u32,
+            timestamp: Timestamp(row.get::<i32, &str>("timestamp") as u32),
         }
     }
 }

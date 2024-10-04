@@ -6,6 +6,7 @@ mod models;
 mod qury;
 mod route;
 mod sql;
+mod time;
 mod timer;
 
 #[macro_use]
