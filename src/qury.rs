@@ -29,62 +29,66 @@ pub async fn pool_price_since(
         return Err("bad params both full".to_owned());
     }
 
-    let pool = models::pool::find_by_address(&mut **db, pool_contract_address)
-        .await
-        .unwrap();
-    let token0 = models::coin::find_by_address(&mut **db, &pool.token0)
-        .await
-        .unwrap();
-    let token1 = models::coin::find_by_address(&mut **db, &pool.token1)
-        .await
-        .unwrap();
-
-    let mut price: f64 = 0.0;
-    let mut decimal_difference = 0;
-    let mut direction = true;
-    if price0.is_some() && price1.is_none() {
-        decimal_difference = token0.decimals - token1.decimals;
-        price = price0.unwrap();
-        direction = true;
-    }
-    if price0.is_none() && price1.is_some() {
-        decimal_difference = token1.decimals - token0.decimals;
-        price = price1.unwrap();
-        direction = false;
-    }
-
-    let swap_opt = models::swap::swap_price_since(
-        &mut **db,
-        pool_contract_address,
-        direction,
-        price,
-        decimal_difference,
-    )
-    .await;
-    match swap_opt {
-        Ok((swap_price_eth, swap)) => {
-            let block = models::block::find_by_number(&mut **db, swap.block_number)
+    match models::pool::find_by_address(&mut **db, pool_contract_address).await {
+        Some(pool) => {
+            let token0 = models::coin::find_by_address(&mut **db, &pool.token0)
                 .await
                 .unwrap();
-            let block_time: time::OffsetDateTime = block.timestamp.into();
-            const USDC_POOL: &str = "b4e16d0168e52d35cacd2c6185b44281ec28c9dc";
-            let price_usd = pool_price_at(&mut **db, USDC_POOL, true, swap.block_number).await;
-            return Ok(PoolSinceResponse {
-                block_time: block_time
-                    .format(format_description!(
-                        "[year]-[month]-[day] [hour]:[minute]:[second]"
-                    ))
-                    .unwrap(),
-                price: swap_price_eth,
-                cash: price_usd.unwrap_or(-1.0),
-                swap,
-                token0,
-                token1,
-            });
+            let token1 = models::coin::find_by_address(&mut **db, &pool.token1)
+                .await
+                .unwrap();
+
+            let mut price: f64 = 0.0;
+            let mut decimal_difference = 0;
+            let mut direction = true;
+            if price0.is_some() && price1.is_none() {
+                decimal_difference = token0.decimals - token1.decimals;
+                price = price0.unwrap();
+                direction = true;
+            }
+            if price0.is_none() && price1.is_some() {
+                decimal_difference = token1.decimals - token0.decimals;
+                price = price1.unwrap();
+                direction = false;
+            }
+
+            let swap_opt = models::swap::swap_price_since(
+                &mut **db,
+                pool_contract_address,
+                direction,
+                price,
+                decimal_difference,
+            )
+            .await;
+            match swap_opt {
+                Ok((swap_price_eth, swap)) => {
+                    let block = models::block::find_by_number(&mut **db, swap.block_number)
+                        .await
+                        .unwrap();
+                    const USDC_POOL: &str = "b4e16d0168e52d35cacd2c6185b44281ec28c9dc";
+                    let price_usd =
+                        pool_price_at(&mut **db, USDC_POOL, true, swap.block_number).await;
+                    let block_timestamp: time::OffsetDateTime = block.timestamp.into();
+                    let block_time = block_timestamp
+                        .format(format_description!(
+                            "[year]-[month]-[day] [hour]:[minute]:[second]"
+                        ))
+                        .unwrap();
+                    return Ok(PoolSinceResponse {
+                        block_time,
+                        price: swap_price_eth,
+                        cash: price_usd.unwrap_or(-1.0),
+                        swap,
+                        token0,
+                        token1,
+                    });
+                }
+                Err(msg) => {
+                    return Err(msg);
+                }
+            }
         }
-        Err(msg) => {
-            return Err(msg);
-        }
+        None => Err(format!("pool not found {}", pool_contract_address)),
     }
 }
 
